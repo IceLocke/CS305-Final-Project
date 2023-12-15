@@ -1,0 +1,16 @@
+title = "SUSTTP Server"
+
+[accounts]
+
+[accounts.0]
+username = "10000000"
+password = "pwd0"
+
+[accounts.1]
+username = "10000001"
+password = "pwd1"
+
+
+[accounts.2]
+username = "10000002"
+password = "pwd2"
