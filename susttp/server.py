@@ -25,12 +25,11 @@ class App:
         while line != '\r\n':
             line = (await reader.readline()).decode('utf8')
             request += line
-        request = req.read(request)
-        path = request.path
-        method = request.method
-        handler = self.route_handler(path)
+        request = req.parse(request)
+        path, method = request.path, request.method
+        req_param, path_param, handler = self.route_handler(path)
 
-        response = handler()
+        response = handler(req_param, path_param)
         writer.write(response.encode('utf-8'))
         await writer.drain()
         writer.close()
