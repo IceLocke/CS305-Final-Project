@@ -1,7 +1,6 @@
-import re
+test_req = 'HEAD url HTTP/1.1\r\nConnection:close\r\nContent-Length:114514\r\n\r\nbody'
 
-
-def parse(request):
+def read(request):
     lines = request.split('\r\n')
     request_line = dict(zip(('Method', 'URL', 'Version'), lines[0].split()))
     headers = {}
@@ -13,4 +12,6 @@ def parse(request):
         headers[key] = value
     return request_line, headers
 
+headers = read(test_req)
 
+print(headers)
