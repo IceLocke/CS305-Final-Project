@@ -14,8 +14,8 @@ class App:
         def warp(func):
             self.url_map[path] = func
             return func
-        return warp
 
+        return warp
 
     def route_handler(self, path):
         request_param, path_param, func = None, None, None
@@ -30,7 +30,7 @@ class App:
         path, method = request.path, request.method
         req_param, path_param, handler = self.route_handler(path)
 
-        response = handler()
+        response = handler(req_param, path_param)
         writer.write(response.encode('utf-8'))
         await writer.drain()
         writer.close()
