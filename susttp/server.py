@@ -28,11 +28,10 @@ class App:
             line = (await reader.readline()).decode('utf8')
             request += line
         request = req.parse(request)
-        path = request.path
-        method = request.method
-        handler = self.route_handler(path)
+        path, method = request.path, request.method
+        req_param, path_param, handler = self.route_handler(path)
 
-        response = resp.construct_response(handler())
+        response = handler(req_param, path_param)
         writer.write(response.encode('utf-8'))
         await writer.drain()
         writer.close()
