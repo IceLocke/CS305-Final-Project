@@ -25,7 +25,7 @@ class App:
         while line != '\r\n':
             line = (await reader.readline()).decode('utf8')
             request += line
-        request = req.read(request)
+        request = req.parse(request)
         path = request.path
         method = request.method
         handler = self.route_handler(path)
