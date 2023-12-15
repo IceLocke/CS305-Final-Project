@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+
+<table>
+    {% for file in files %}
+     <tr><th><a href="{{file['path']}}">{{file['name']}}</a></th></tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

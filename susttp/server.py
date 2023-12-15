@@ -1,6 +1,7 @@
 import asyncio
-import request as req
-import response as resp
+import susttp.request as req
+import susttp.response as resp
+from functools import wraps
 
 
 class App:
@@ -13,8 +14,8 @@ class App:
         def warp(func):
             self.url_map[path] = func
             return func
-
         return warp
+
 
     def route_handler(self, path):
         request_param, path_param, func = None, None, None
@@ -29,13 +30,15 @@ class App:
         path, method = request.path, request.method
         req_param, path_param, handler = self.route_handler(path)
 
-        response = handler(req_param, path_param)
+        response = handler()
         writer.write(response.encode('utf-8'))
         await writer.drain()
         writer.close()
 
     async def run_server(self, host, port):
-        self.server = await asyncio.start_server()
+        self.server = await asyncio.start_server(self.handle_client, host, port)
+        async with self.server:
+            await self.server.serve_forever()
 
     def run(self, host='localhost', port=8080):
         asyncio.run(self.run_server(host, port))
