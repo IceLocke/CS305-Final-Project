@@ -2,6 +2,7 @@ import os.path
 import toml
 import base64
 import secrets
+import threading
 
 import susttp.server as server
 import susttp.response as resp
@@ -60,6 +61,7 @@ def authenticate(request: req.Request):
             if password == accounts[username]:
                 session_id = str(secrets.token_hex(32))
                 sessions[session_id] = username
+                threading.Timer(3600, lambda _session_id: sessions.pop(_session_id), session_id)
                 return session_id
     return None
 
