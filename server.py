@@ -80,6 +80,7 @@ def file_system_html(path):
             'name': file,
             'path': '/' + str(os.path.join(path, file))
         })
+    os.chdir(root_dict)
     return file_system_template.render(head=path, files=files)
 
 
@@ -90,26 +91,28 @@ def error_html(status, reason):
 app = server.App()
 
 
-@app.route("/<username>/<path>")
-def file_view(request: req.Request, body):
-    username = request.path_param['username']
-    path = request.path_param['path']
+@app.route("/<string:username>/<path>")
+def file_view(request: req.Request):
+    print(request.request_param, request.path_param)
+    html = file_system_html(os.path.join(request.path_param['username'], request.path_param['path']))
+    print(html)
+    return resp.html_response(html)
 
 
 @app.route("/upload")
-def upload(request: req.Request, body):
+def upload(request: req.Request):
     pass
 
 
 @app.route("/delete")
-def delete(request: req.Request, body):
+def delete(request: req.Request):
     pass
 
 
 @app.route("/chunk")
-def delete(request: req.Request, body):
+def delete(request: req.Request):
     pass
 
 
 if __name__ == '__main__':
-    app.run("localhost", 8080)
+    app.run("localhost", 8081)

@@ -19,19 +19,21 @@ class Response:
     def build(self, chunked=False, chunk_size=4096):
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
         for key in self.header:
-            response += f'{key}:{self.header[key]}\r\n'
+            response += f'{key}: {self.header[key]}\r\n'
         response = response.encode('utf-8')
         if chunked:
+            response += b'\r\n'
             current, next = 0, 0
             while current < len(self.body):
                 next = min(current + chunk_size, len(self.body))
-                response += str(next - current).encode('utf-8') + b'\r\f'
-                response += self.body[current: next] + b'\r\f'
+                response += str(next - current + 2).encode('utf-8') + b'\r\n'
+                response += self.body[current: next] + b'\r\n'
                 current = next
         else:
             if self.body:
-                response += f'Content-Length:{len(self.body) * 4}\r\n'.encode('utf-8')
+                response += f'Content-Length: {len(self.body)}\r\n\r\n'.encode('utf-8')
                 response += self.body
+        print(response)
         return response
 
 
@@ -52,7 +54,9 @@ def method_not_allowed():
 
 
 def html_response(html):
-    return Response(body=html).build()
+    res = Response(body=html)
+    res.header['Content-Type'] = 'text/html'
+    return res.build()
 
 
 def download_response(body, chunked=False, chunk_size=4096):

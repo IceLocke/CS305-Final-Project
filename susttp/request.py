@@ -6,11 +6,13 @@ class Request:
         self.headers = headers
         self.request_param = None
         self.path_param = None
+        self.anchor = None
+        self.body = None
 
 
 def parse(request):
     lines = request.split('\r\n')
-    if len(lines[0]) != 3:
+    if len(lines[0].split()) != 3:
         return None
     request_line = dict(zip(('method', 'path', 'version'), lines[0].split()))
 
