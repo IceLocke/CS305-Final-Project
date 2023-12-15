@@ -1,7 +1,6 @@
 import asyncio
 import request as req
 import response as resp
-import socket
 
 
 class App:
@@ -14,14 +13,24 @@ class App:
         def warp(func):
             self.url_map[path] = func
             return func
+
         return warp
 
+    def route_handler(self, path):
+        request_param, path_param, func = None, None, None
+        return request_param, path_param, func
+
     async def handle_client(self, reader, writer):
-        request = None
-        while request != '\r\n':
-            request += (await reader.read(255)).decode('utf8')
+        request, line = "", None
+        while line != '\r\n':
+            line = (await reader.readline()).decode('utf8')
+            request += line
         request = req.read(request)
-        response = resp.construct_response()
+        path = request.path
+        method = request.method
+        handler = self.route_handler(path)
+
+        response = resp.construct_response(handler())
         writer.write(response.encode('utf-8'))
         await writer.drain()
         writer.close()
@@ -31,6 +40,3 @@ class App:
 
     def run(self, host='localhost', port=8080):
         asyncio.run(self.run_server(host, port))
-
-
-
