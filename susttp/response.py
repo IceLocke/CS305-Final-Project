@@ -19,16 +19,17 @@ class Response:
     def build(self, chunked=False, chunk_size=4096):
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
         for key in self.header:
-            response += f'{key}: {self.header[key]}\r\n'
+            response += f'{key}:{self.header[key]}\r\n'
         response = response.encode('utf-8')
         if chunked:
-            response += b'\r\n'
+            response += b'Transfer-Encoding:chunked\r\n\r\n'
             current_pos, next_pos = 0, 0
             while current_pos < len(self.body):
                 next_pos = min(current_pos + chunk_size, len(self.body))
-                response += str(next_pos - current_pos + 2).encode('utf-8') + b'\r\n'
+                response += str(next_pos - current_pos).encode('utf-8') + b'\r\n'
                 response += self.body[current_pos: next_pos] + b'\r\n'
                 current_pos = next_pos
+            response += b'0\r\n\r\n'
         else:
             if self.body:
                 response += f'Content-Length: {len(self.body)}\r\n\r\n'.encode('utf-8')
@@ -58,7 +59,7 @@ def html_response(html):
     return res
 
 
-def file_download_response(file, content_type):
+def file_download_response(file, content_type, chunked=False):
     res = Response(body=file)
     res.header['Content-Type'] = content_type
     res.header['Content-Disposition'] = 'attachment'
