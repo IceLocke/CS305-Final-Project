@@ -3,7 +3,6 @@ import susttp.request as req
 import susttp.response as resp
 from functools import wraps
 import re
-from functools import wraps
 
 
 class App:

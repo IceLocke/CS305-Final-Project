@@ -1,5 +1,6 @@
 import time
 
+
 class Response:
     def __init__(self, http_version="HTTP/1.1", status=200, reason_phrase="OK",
                  header=None, body=None):
@@ -9,12 +10,12 @@ class Response:
         timestamp = time.time()
         time_struct = time.gmtime(timestamp)
         self.header = {
-                'Server': 'ArchiveServer',
-                'Date': time.strftime("%a, %d %b %H:%M:%S GMT", time_struct),
-                'Content-Type': 'text/plain; charset=utf-8',
-            } if header is None else header
+            'Server': 'ArchiveServer',
+            'Date': time.strftime("%a, %d %b %H:%M:%S GMT", time_struct),
+            'Content-Type': 'text/plain; charset=utf-8',
+        } if header is None else header
         self.body = body.encode('utf-8') if body else None
-        
+
 
     def build(self, chunked=False, chunk_size=4096):
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
@@ -65,4 +66,3 @@ def download_response(body, chunked=False, chunk_size=4096):
 
 def upload_response():
     return Response().build()
-
