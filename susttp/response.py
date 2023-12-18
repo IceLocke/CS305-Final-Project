@@ -14,7 +14,7 @@ class Response:
                 'Date': time.strftime("%a, %d %b %H:%M:%S GMT", time_struct),
                 'Content-Type': 'text/plain; charset=utf-8',
             } if header is None else header
-        self.body = body.encode('utf-8') if body else None
+        self.body = body
 
     def build(self, chunked=False, chunk_size=4096):
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
@@ -53,13 +53,16 @@ def method_not_allowed():
 
 
 def html_response(html):
-    res = Response(body=html)
+    res = Response(body=html.encode('utf-8'))
     res.header['Content-Type'] = 'text/html'
     return res
 
 
-def file_download_response(body):
-    return Response(body=body)
+def file_download_response(file, content_type):
+    res = Response(body=file)
+    res.header['Content-Type'] = content_type
+    res.header['Content-Disposition'] = 'attachment'
+    return res
 
 
 def upload_response():

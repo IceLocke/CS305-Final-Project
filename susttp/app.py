@@ -2,6 +2,7 @@ import asyncio
 import susttp.request as req
 import susttp.response as resp
 from functools import wraps
+import threading
 import re
 
 
@@ -105,6 +106,9 @@ class App:
         while line != '\r\n':
             line = (await reader.readline()).decode('utf8')
             request += line
+            if line:
+                print(line)
+        print('finish input')
         request = req.parse(request)
         path, method = request.path, request.method
         request.request_param, request.path_param, handler, request.anchor = self.route_handler(path)
