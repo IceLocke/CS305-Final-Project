@@ -21,7 +21,7 @@ def parse(request):
     for line in lines[1:]:
         if line == '':
             break
-        print(line)
+        # print(line)
         key, value = line.split(':', 1)
         headers[key] = value.strip()
 
@@ -31,5 +31,4 @@ def parse(request):
         version=request_line['version'],
         headers=headers
     )
-
 
