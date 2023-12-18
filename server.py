@@ -70,15 +70,17 @@ def file_system_html(path):
     root_dict, files = os.getcwd(), []
     view_path = os.path.join(root_dict, 'data', path)
     print(view_path)
+    print(path)
     os.chdir(view_path)
-    files.append({'name': '/', 'path': '/'+path.split('/')[0]+'/'})
+    username = path.split('\\')[0].split('/')[0]
+    files.append({'name': '/', 'path': '/' + username + '/'})
     files.append({'name': '../', 'path': '../'})
     for file in os.listdir('.'):
         if os.path.isdir(file):
-            file += '/'
+            file = os.path.join(file, '')
         files.append({
             'name': file,
-            'path': '/' + str(os.path.join(path, file))
+            'path': '/' + os.path.join(path, file)
         })
     os.chdir(root_dict)
     return file_system_template.render(head=path, files=files)
@@ -93,9 +95,8 @@ app = server.App()
 
 @app.route("/<string:username>/<path>")
 def file_view(request: req.Request):
-    print(request.request_param, request.path_param)
+    # TODO: 检查文件是否存在以及是否有权限访问
     html = file_system_html(os.path.join(request.path_param['username'], request.path_param['path']))
-    print(html)
     return resp.html_response(html)
 
 
