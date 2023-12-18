@@ -31,10 +31,7 @@ class Response:
             response += f'{key}:{value}\r\n'
         # Construct cookies
         if self.set_cookie:
-            set_cookie = ''
-            for key, value in self.set_cookie.items():
-                set_cookie += f'; {key}={value}'
-            set_cookie.lstrip('; ')
+            set_cookie = '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
             response += f'Set-Cookie:{set_cookie}\r\n'
 
         response = response.encode('utf-8')

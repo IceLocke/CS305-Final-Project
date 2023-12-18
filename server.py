@@ -8,7 +8,6 @@ import susttp.request as req
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-
 # Jinja2 模板渲染
 env = Environment(
     loader=PackageLoader("server"),
@@ -64,7 +63,7 @@ def error_html(status, reason):
 app = server.App()
 
 
-@app.route("/<string:username>/<path>")
+@app.route("/<string:username>/<path>", require_authentication=True)
 def file_view(request: req.Request):
     username = request.path_param['username']
     path = os.path.join(request.path_param['username'], request.path_param['path'])
