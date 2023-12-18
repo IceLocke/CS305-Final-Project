@@ -1,4 +1,5 @@
 import binascii
+import time
 
 import susttp.request as req
 import threading
@@ -14,14 +15,14 @@ class AuthManager:
 
     def get_username(self, session_id):
         if session_id in self.sessions.keys():
-            return self.sessions[session_id]
+            return self.sessions[session_id]['username']
         else:
             return None
 
     def filter(self, request: req.Request, handler):
         if handler.__name__ in self.authenticated_func:
-            session_id = self.authorized(request)
-            return session_id if session_id is not None else self.authenticate(request)
+            authorized = self.authorized(request)
+            return True if authorized else self.authenticate(request)
         else:
             return True
 
@@ -41,9 +42,14 @@ class AuthManager:
         print(request.cookies)
         if request.cookies is not None:
             if "session-id" in request.cookies.keys():
-                if request.cookies["session-id"] in self.sessions.keys():
-                    return request.cookies['session-id']
-        return None
+                session_id = request.cookies["session-id"]
+                if session_id in self.sessions.keys():
+                    if time.time() < self.sessions[session_id]['expire_time']:
+                        return True
+                    else:
+                        self.sessions.pop(session_id)
+                        return False
+        return False
 
     def authenticate(self, request: req.Request):
         """
@@ -59,12 +65,12 @@ class AuthManager:
                 auth_info = base64.b64decode(bytes(auth_info, 'ASCII'))
             except binascii.Error as e:
                 print(e)
+                return None
             auth_info = auth_info.decode('ASCII').split(':')
             username, password = auth_info[0], auth_info[-1]
             if username in self.accounts.keys():
                 if password == self.accounts[username]:
                     session_id = str(secrets.token_hex(32))
-                    self.sessions[session_id] = username
-                    threading.Timer(3600, lambda _session_id: self.sessions.pop(_session_id), session_id)
+                    self.sessions[session_id] = {'username': username, 'expire_time': time.time() + 3600}
                     return session_id
         return None

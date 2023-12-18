@@ -18,6 +18,18 @@ file_system_template = env.get_template("file_system.html")
 error_template = env.get_template("error.html")
 
 
+def is_server_file(path):
+    root_dict = os.getcwd()
+    target_path = os.path.join(root_dict, 'data', path)
+    return os.path.isfile(target_path)
+
+
+def is_server_dir(path):
+    root_dict = os.getcwd()
+    target_path = os.path.join(root_dict, 'data', path)
+    return os.path.isdir(target_path)
+
+
 def file_system_html(path):
     root_dict, files = os.getcwd(), []
     view_path = os.path.join(root_dict, 'data', path)
