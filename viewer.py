@@ -1,7 +1,7 @@
 import os
 import time
 from yattag import Doc
-from susttp.server import App
+from susttp.app import App
 
 def directory_viewer(path):
     doc, tag, text = Doc().tagtext()

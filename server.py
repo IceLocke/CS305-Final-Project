@@ -4,7 +4,7 @@ import base64
 import secrets
 import threading
 
-import susttp.server as server
+import susttp.app as server
 import susttp.response as resp
 import susttp.request as req
 
