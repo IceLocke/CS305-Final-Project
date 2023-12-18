@@ -1,11 +1,12 @@
 class Request:
-    def __init__(self, method, path, version, headers):
+    def __init__(self, method, path, version, headers, cookies=None):
         self.method = method
         self.path = path
         self.version = version
         self.headers = headers
         self.request_param = None
         self.path_param = None
+        self.cookies = cookies
         self.anchor = None
         self.body = None
 
@@ -25,11 +26,19 @@ def parse(request):
         key, value = line.split(':', 1)
         headers[key] = value.strip()
 
+    cookies = None
+    if "Cookie" in headers.keys():
+        cookies = {}
+        for cookie in headers["Cookie"].split(";"):
+            key, value = cookie.split("=", 1)
+            cookies[key.strip()] = value
+
     return Request(
         method=request_line['method'],
         path=request_line['path'],
         version=request_line['version'],
-        headers=headers
+        headers=headers,
+        cookies=cookies
     )
 
 

@@ -1,3 +1,5 @@
+import binascii
+
 import susttp.request as req
 import threading
 import secrets
@@ -18,12 +20,8 @@ class AuthManager:
 
     def filter(self, request: req.Request, handler):
         if handler.__name__ in self.authenticated_func:
-            if self.check_authorization(request):
-                return True
-            elif self.check_authorization(request):
-                return True
-            else:
-                return False
+            session_id = self.authorized(request)
+            return session_id if session_id is not None else self.authenticate(request)
         else:
             return True
 
@@ -31,25 +29,20 @@ class AuthManager:
         def warp(func):
             self.authenticated_func.append(func.__name__)
             return func
-
         return warp
 
-    def check_authorization(self, request: req.Request):
+    def authorized(self, request: req.Request):
         """
         Check whether a request is authorized
         :param request: the request objet
-        :return: `session-id` if the request is authorized, otherwise `None`
+        :return: True if the request is authorized, otherwise False
         """
-        headers = request.headers
         # 检查是否已经认证过
-        if "Cookie" in headers.keys():
-            cookies = {}
-            for cookie in headers["Cookie"].split(";"):
-                key, value = cookie.split("=", 1)
-                cookies[key.strip()] = value
-            if "session-id" in cookies.keys():
-                if cookies["session-id"] in self.sessions.keys():
-                    return cookies["session-id"]
+        print(request.cookies)
+        if request.cookies is not None:
+            if "session-id" in request.cookies.keys():
+                if request.cookies["session-id"] in self.sessions.keys():
+                    return request.cookies['session-id']
         return None
 
     def authenticate(self, request: req.Request):
@@ -62,7 +55,11 @@ class AuthManager:
         # 否则检查是否试图认证
         if 'Authorization' in headers.keys():
             auth_info = headers['Authorization'].split()[-1]
-            auth_info = base64.b64decode(auth_info).split(':')
+            try:
+                auth_info = base64.b64decode(bytes(auth_info, 'ASCII'))
+            except binascii.Error as e:
+                print(e)
+            auth_info = auth_info.decode('ASCII').split(':')
             username, password = auth_info[0], auth_info[-1]
             if username in self.accounts.keys():
                 if password == self.accounts[username]:
