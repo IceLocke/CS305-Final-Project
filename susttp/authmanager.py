@@ -3,10 +3,36 @@ import threading
 import secrets
 import base64
 
+
 class AuthManager:
-    def __init__(self, ):
+    def __init__(self):
         self.accounts = {}
         self.sessions = {}
+        self.authenticated_func = []
+
+    def get_username(self, session_id):
+        if session_id in self.sessions.keys():
+            return self.sessions[session_id]
+        else:
+            return None
+
+    def filter(self, request: req.Request, handler):
+        if handler.__name__ in self.authenticated_func:
+            if self.check_authorization(request):
+                return True
+            elif self.check_authorization(request):
+                return True
+            else:
+                return False
+        else:
+            return True
+
+    def require_authentication(self):
+        def warp(func):
+            self.authenticated_func.append(func.__name__)
+            return func
+
+        return warp
 
     def check_authorization(self, request: req.Request):
         """
@@ -45,4 +71,3 @@ class AuthManager:
                     threading.Timer(3600, lambda _session_id: self.sessions.pop(_session_id), session_id)
                     return session_id
         return None
-
