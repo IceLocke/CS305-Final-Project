@@ -3,11 +3,13 @@ import time
 
 class Response:
     def __init__(self, http_version="HTTP/1.1", status=200, reason_phrase="OK",
-                 header=None, body=None):
+                 header=None, body=None,  chunked=False, chunk_size=4096):
         self.http_version = http_version
         self.status = status
         self.reason_phrase = reason_phrase
         self.set_cookie = None
+        self.chunked = False
+        self.chunk_size = chunk_size
         timestamp = time.time()
         time_struct = time.gmtime(timestamp)
         self.header = {
@@ -22,7 +24,7 @@ class Response:
             self.set_cookie = {}
         self.set_cookie[key] = value
 
-    def build(self, chunked=False, chunk_size=4096):
+    def build(self):
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
         # Construct common headers
         for key, value in self.header.items():
@@ -36,11 +38,11 @@ class Response:
             response += f'Set-Cookie:{set_cookie}\r\n'
 
         response = response.encode('utf-8')
-        if chunked:
+        if self.chunked:
             response += b'Transfer-Encoding:chunked\r\n\r\n'
             current_pos, next_pos = 0, 0
             while current_pos < len(self.body):
-                next_pos = min(current_pos + chunk_size, len(self.body))
+                next_pos = min(current_pos + self.chunk_size, len(self.body))
                 response += str(next_pos - current_pos).encode('utf-8') + b'\r\n'
                 response += self.body[current_pos: next_pos] + b'\r\n'
                 current_pos = next_pos

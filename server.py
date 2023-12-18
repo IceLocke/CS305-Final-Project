@@ -74,9 +74,10 @@ def file_view(request: req.Request):
         return resp.html_response(html)
     elif is_server_file(path):  # file
         file, content_type = file_binary(path)
-        print(file)
+        # print(file)
         print(content_type)
-        return resp.file_download_response(file=file, content_type=content_type)
+        chunked = ('chunked' in request.request_param) and (request.request_param['chunked'] == '1')
+        return resp.file_download_response(file=file, content_type=content_type, chunked=chunked)
     else:  # not found
         return resp.not_find_response()
 
