@@ -60,7 +60,7 @@ def html_response(html):
 
 
 def file_download_response(file, content_type, chunked=False):
-    res = Response(body=file)
+    res = Response(body=file, chunked=chunked)
     res.header['Content-Type'] = content_type
     res.header['Content-Disposition'] = 'attachment'
     return res
