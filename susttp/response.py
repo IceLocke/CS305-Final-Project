@@ -7,6 +7,7 @@ class Response:
         self.http_version = http_version
         self.status = status
         self.reason_phrase = reason_phrase
+        self.set_cookie = None
         timestamp = time.time()
         time_struct = time.gmtime(timestamp)
         self.header = {
@@ -16,10 +17,24 @@ class Response:
             } if header is None else header
         self.body = body
 
+    def add_cookie(self, key, value):
+        if self.set_cookie is None:
+            self.set_cookie = {}
+        self.set_cookie[key] = value
+
     def build(self, chunked=False, chunk_size=4096):
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
-        for key in self.header:
-            response += f'{key}:{self.header[key]}\r\n'
+        # Construct common headers
+        for key, value in self.header.items():
+            response += f'{key}: {value}\r\n'
+        # Construct cookies
+        if self.set_cookie:
+            set_cookie = ''
+            for key, value in self.set_cookie.items():
+                set_cookie += f'; {key}={value}'
+            set_cookie.lstrip('; ')
+            response += f'Set-Cookie: {set_cookie}\r\n'
+
         response = response.encode('utf-8')
         if chunked:
             response += b'Transfer-Encoding:chunked\r\n\r\n'
@@ -68,4 +83,3 @@ def file_download_response(file, content_type, chunked=False):
 
 def upload_response():
     return Response()
-

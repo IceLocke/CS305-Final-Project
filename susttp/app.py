@@ -1,9 +1,9 @@
 import asyncio
 import susttp.request as req
 import susttp.response as resp
-from functools import wraps
-import threading
 import re
+
+from susttp.authmanager import AuthManager
 
 
 class App:
@@ -49,6 +49,7 @@ class App:
     def __init__(self):
         self.dynamic_route_items = []  # List of DynamicRouteItem
         self.server = None
+        self.auth_manager = AuthManager()
 
     def route(self, path):
         def warp(func):
@@ -116,7 +117,13 @@ class App:
             if handler is None:
                 response = resp.not_find_response()
             else:
-                response = handler(request)
+                filter_result = self.auth_manager.filter(request, handler)
+                if filter_result:
+                    response = handler(request)
+                    if filter_result.__class__ is str:
+                        response.add_cookie('session-id', filter_result)
+                else:
+                    response = resp.unauthorized_response()
         else:
             response = resp.Response(status=400, reason_phrase='Bad Request')
         writer.write(response.build())
