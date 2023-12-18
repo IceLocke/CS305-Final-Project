@@ -26,11 +26,8 @@ class AuthManager:
         else:
             return True
 
-    def require_authentication(self):
-        def warp(func):
-            self.authenticated_func.append(func.__name__)
-            return func
-        return warp
+    def require_authentication(self, name):
+        self.authenticated_func.append(name)
 
     def authorized(self, request: req.Request):
         """
@@ -68,9 +65,8 @@ class AuthManager:
                 return None
             auth_info = auth_info.decode('ASCII').split(':')
             username, password = auth_info[0], auth_info[-1]
-            if username in self.accounts.keys():
-                if password == self.accounts[username]:
-                    session_id = str(secrets.token_hex(32))
-                    self.sessions[session_id] = {'username': username, 'expire_time': time.time() + 3600}
-                    return session_id
+            if (username, password) in self.accounts.items():
+                session_id = str(secrets.token_hex(32))
+                self.sessions[session_id] = {'username': username, 'expire_time': time.time() + 3600}
+                return session_id
         return None

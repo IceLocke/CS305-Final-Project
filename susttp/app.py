@@ -51,9 +51,11 @@ class App:
         self.server = None
         self.auth_manager = AuthManager()
 
-    def route(self, path):
+    def route(self, path, require_authentication=False):
         def warp(func):
             self.dynamic_route_items.append(self.DynamicRouteItem(path=path, func=func))
+            if require_authentication:
+                self.auth_manager.require_authentication(func.__name__)
             return func
         return warp
 
@@ -103,11 +105,8 @@ class App:
         return request_param, path_param, func, anchor
 
     async def handle_client(self, reader, writer):
-        request = None
-        try:
-            request = (await reader.readuntil(b'\r\n\r\n')).decode('utf-8')
-        except asyncio.IncompleteReadError | asyncio.LimitOverrunError as e:
-            print(e)
+        request = (await reader.readuntil(b'\r\n\r\n')).decode('utf-8')
+        print(request)
         if request:
             request = req.parse(request)
             path, method = request.path, request.method
@@ -117,6 +116,7 @@ class App:
             if handler is None:
                 response = resp.not_find_response()
             else:
+                # True / session-id will pass the filter
                 filter_result = self.auth_manager.filter(request, handler)
                 if filter_result:
                     response = handler(request)
