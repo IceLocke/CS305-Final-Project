@@ -105,7 +105,11 @@ class App:
         return request_param, path_param, func, anchor
 
     async def handle_client(self, reader, writer):
-        request = (await reader.readuntil(b'\r\n\r\n')).decode('utf-8')
+        request = None
+        try:
+            request = (await reader.readuntil(b'\r\n\r\n')).decode('utf-8')
+        except asyncio.IncompleteReadError as e:
+            print(e)
         print(request)
         if request:
             request = req.parse(request)

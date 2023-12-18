@@ -9,7 +9,10 @@ import base64
 
 class AuthManager:
     def __init__(self):
-        self.accounts = {}
+        self.accounts = {
+            '10000000': 'pwd0',
+            '10000001': 'pwd1'
+        }
         self.sessions = {}
         self.authenticated_func = []
 
