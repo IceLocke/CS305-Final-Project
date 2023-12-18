@@ -26,7 +26,7 @@ class Response:
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
         # Construct common headers
         for key, value in self.header.items():
-            response += f'{key}: {value}\r\n'
+            response += f'{key}:{value}\r\n'
         # Construct cookies
         if self.set_cookie:
             set_cookie = ''
@@ -47,7 +47,7 @@ class Response:
             response += b'0\r\n\r\n'
         else:
             if self.body:
-                response += f'Content-Length: {len(self.body)}\r\n\r\n'.encode('utf-8')
+                response += f'Content-Length:{len(self.body)}\r\n\r\n'.encode('utf-8')
                 response += self.body
         return response
 
