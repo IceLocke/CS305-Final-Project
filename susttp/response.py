@@ -33,7 +33,7 @@ class Response:
             for key, value in self.set_cookie.items():
                 set_cookie += f'; {key}={value}'
             set_cookie.lstrip('; ')
-            response += f'Set-Cookie: {set_cookie}\r\n'
+            response += f'Set-Cookie:{set_cookie}\r\n'
 
         response = response.encode('utf-8')
         if chunked:
