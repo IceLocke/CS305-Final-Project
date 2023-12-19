@@ -10,23 +10,28 @@
 
   </div>
 </div>
-  <form id="uploadForm" style="margin-top: 2em">
-    <div class="row text-center">
-     <div class="col-auto">
-        <label for="fileupload" class="form-label"></label>
-      </div>
-      <div class="col-auto">
-        <input class="form-control" id="fileupload" type="file">
-      </div>
-      <div class="col-3">
-        <button type="submit" class="btn btn-primary mb-3">Upload</button>
-      </div>
-    </div>
+  <form id="uploadForm" style="margin-top: 2em" enctype="multipart/form-data">
+    <label for="fileupload" class="form-label"></label>
+    <input class="form-control" id="fileupload" name="file" type="file">
+    <button type="submit" class="btn btn-primary mb-3" name="uploadButton">Upload</button>
+<!--    <div class="row text-center">-->
+<!--     <div class="col-auto">-->
+<!--        <label for="fileupload" class="form-label"></label>-->
+<!--      </div>-->
+<!--      <div class="col-auto">-->
+<!--        <input class="form-control" id="fileupload" type="file">-->
+<!--      </div>-->
+<!--      <div class="col-3">-->
+<!--        <button type="submit" class="btn btn-primary mb-3">Upload</button>-->
+<!--      </div>-->
+<!--    </div>-->
   </form>
 <script>
   $("#uploadForm").submit(function (evt) {
       evt.preventDefault();
-      let formData = new FormData($(this)[0]);
+      let formData = new FormData();
+      formData.append("file", $('#fileupload')[0].files[0])
+      console.log(formData)
       $.ajax({
           url: '/upload?path='+location.pathname,
           type: 'POST',
@@ -37,7 +42,11 @@
           enctype: 'multipart/form-data',
           processData: false,
           success: function (response) {
-             alert(response);
+            let resp = 'Success!'
+            if (response) {
+              resp += '\nServer response: ' + response
+            }
+            alert(resp);
           }
        });
 

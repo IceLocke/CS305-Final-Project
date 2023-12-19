@@ -123,8 +123,21 @@ class App:
             request = req.parse(request)
             path, method = request.path, request.method
             request.request_param, request.path_param, handler, request.anchor = self.route_handler(path)
+            # if "Content-Type" in request.headers.keys() and request.headers["Content-Type"].startswith("multipart"):
+            #     # request.body = ''
+            #     # first_line = await reader.readuntil(b'\r\n')  # boundary
+            #     # print('first_line=', first_line)
+            #     # chunk_size = int(await reader.readuntil(b'\r\n'))
+            #     # while chunk_size > 0:
+            #     #     print('chunk_size=', chunk_size)
+            #     #     request.body += await reader.read(chunk_size)
+            #     #     chunk_size = int(await reader.readuntil(b'\r\n'))
+            #     # print("ok!body=", request.body)
+            #     while True:
+            #         line = await reader.readline()
+            #         print(line)
             if "Content-Length" in request.headers.keys():
-                request.body = reader.read(request.headers["Content-Length"])
+                request.body = await reader.read(int(request.headers["Content-Length"]))
             if handler is None:
                 self.logger.info(f'Cannot find resource {request.path}')
                 response = resp.not_find_response()
