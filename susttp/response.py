@@ -4,7 +4,7 @@ import time
 class Response:
     def __init__(self, http_version="HTTP/1.1", status=200, reason_phrase="OK",
                  headers=None, content_type='text/plain; charset=utf-8', body=None,
-                 chunked=False, chunk_size=4096, range=None):
+                 chunked=False, chunk_size=4096, ranges=None):
         self.http_version = http_version
         self.status = status
         self.reason_phrase = reason_phrase
@@ -39,9 +39,9 @@ class Response:
             self.headers['Set-Cookie'] = cookie
 
         # Range
-        if self.range is not None:
-            if len(self.range) == 1:
-                l, r = self.range[0]
+        if self.ranges is not None:
+            if len(self.ranges) == 1:
+                l, r = self.ranges[0]
                 self.headers['Content-Range'] = f'bytes {l}-{r}/{len(self.body)}'
                 body = self.body[l: r + 1]
             else:
@@ -119,10 +119,10 @@ def range_not_satisfiable():
     return Response(status=416, reason_phrase='Range Not Satisfiable')
 
 
-def file_download_response(file, content_type, chunked=False, range=None):
+def file_download_response(file, content_type, chunked=False, ranges=None):
     if range is not None:
         res = Response(status=206, reason_phrase='Partial Content',
-                       content_type=content_type, body=file, range=range)
+                       content_type=content_type, body=file, ranges=ranges)
     else:
         res = Response(content_type=content_type, body=file, chunked=chunked)
     res.headers['Content-Disposition'] = 'attachment'

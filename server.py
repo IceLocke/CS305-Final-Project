@@ -84,7 +84,7 @@ def error_html(status, reason):
 app = server.App()
 
 
-@app.route("/<path>", require_authentication=True)
+@app.route("/<path>", require_authentication=False)
 def file_view(request: req.Request):
     if request.method != 'GET':
         return resp.method_not_allowed()
@@ -104,8 +104,8 @@ def file_view(request: req.Request):
                     l, r = map(int, byte_range.split('-'))
                 if r < l or l > len(file) or r > len(file):
                     return resp.range_not_satisfiable()
-                range.append((l, r))
-            return resp.file_download_response(file=file, content_type=content_type, range=range)
+                ranges.append((l, r))
+            return resp.file_download_response(file=file, content_type=content_type, ranges=ranges)
         else:
             return resp.file_download_response(file=file, content_type=content_type, chunked=chunked)
     elif is_server_dir(path):  # folder
@@ -119,22 +119,18 @@ def file_view(request: req.Request):
         return resp.not_find_response()
 
 
-@app.route("/upload", require_authentication=True)
+@app.route("/upload", require_authentication=False)
 def upload(request: req.Request):
     if request.method != 'POST':
         return resp.method_not_allowed()
-    pass
+
+    return resp.upload_response()
 
 
-@app.route("/delete", require_authentication=True)
+@app.route("/delete", require_authentication=False)
 def delete(request: req.Request):
     if request.method != 'POST':
         return resp.method_not_allowed()
-    pass
-
-
-@app.route("/chunk")
-def delete(request: req.Request):
     pass
 
 
@@ -154,4 +150,3 @@ if __name__ == '__main__':
     ip = args.i
     port = args.p
     app.run(ip, port)
-
