@@ -3,52 +3,88 @@ import time
 
 class Response:
     def __init__(self, http_version="HTTP/1.1", status=200, reason_phrase="OK",
-                 header=None, body=None,  chunked=False, chunk_size=4096):
+                 headers=None, content_type='text/plain; charset=utf-8', body=None,
+                 chunked=False, chunk_size=4096, range=None):
         self.http_version = http_version
         self.status = status
         self.reason_phrase = reason_phrase
         self.set_cookie = None
         self.chunked = False
         self.chunk_size = chunk_size
+        self.range = range
+        
         timestamp = time.time()
         time_struct = time.gmtime(timestamp)
-        self.header = {
-                'Server': 'ArchiveServer',
+        self.headers = {
+                'Server': 'SUSTTP Server',
                 'Date': time.strftime("%a, %d %b %H:%M:%S GMT", time_struct),
-                'Content-Type': 'text/plain; charset=utf-8',
-            } if header is None else header
+                'Content-Type': content_type,
+            } if headers is None else headers
+        
         self.body = body
+
 
     def add_cookie(self, key, value):
         if self.set_cookie is None:
             self.set_cookie = {}
         self.set_cookie[key] = value
 
-    def build(self):
-        response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
-        # Construct common headers
-        for key, value in self.header.items():
-            response += f'{key}:{value}\r\n'
-        # Construct cookies
-        if self.set_cookie:
-            set_cookie = '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
-            response += f'Set-Cookie:{set_cookie}\r\n'
 
-        response = response.encode('utf-8')
-        if self.chunked:
-            response += b'Transfer-Encoding:chunked\r\n\r\n'
+    def build(self):
+        # Process headers and body
+        body = b''
+        
+        # Cookie
+        if self.set_cookie is not None:
+            cookie = '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
+            self.headers['Set-Cookie'] = cookie
+
+        # Range
+        if self.range is not None:
+            if len(self.range) == 1:
+                l, r = self.range[0]
+                self.headers['Content-Range'] = f'bytes {l}-{r}/{len(self.body)}'
+                self.headers['Content-Length'] = str(r - l + 1)
+                body = self.body[l, r + 1]
+            else:
+                content_type = self.headers['Content-Type']
+                self.headers['Content-Type'] = 'multipart/byteranges; boundary=3d6b6a416f9b5'
+                for l, r in self.range:
+                    body += f'Content-Type: {content_type}\r\n'.encode('utf-8')
+                    body += f'Content-Range: bytes {l}-{r}/{len(self.body)}\r\n'.encode('utf-8')
+                    body += self.body[l, r + 1]
+                    body += b'--3d6b6a416f9b5\r\n'
+                body = body[:-2] + b'--'
+                
+        # Chunk
+        elif self.chunked:
+            self.headers['Transfer-Encoding'] = 'chunked'
             current_pos, next_pos = 0, 0
             while current_pos < len(self.body):
                 next_pos = min(current_pos + self.chunk_size, len(self.body))
-                response += str(next_pos - current_pos).encode('utf-8') + b'\r\n'
-                response += self.body[current_pos: next_pos] + b'\r\n'
+                body += str(next_pos - current_pos).encode('utf-8') + b'\r\n'
+                body += self.body[current_pos: next_pos] + b'\r\n'
                 current_pos = next_pos
-            response += b'0\r\n\r\n'
-        else:
-            if self.body:
-                response += f'Content-Length:{len(self.body)}\r\n\r\n'.encode('utf-8')
-                response += self.body
+            body += b'0\r\n\r\n'
+        
+        # Plain body
+        elif self.body:
+            self.headers['Content-Length'] = len(self.body)
+            body = self.body
+        
+        # Construct status line
+        response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
+        
+        # Construct headers
+        for key, value in self.headers.items():
+            response += f'{key}: {value}\r\n'
+        response += '\r\n'
+        response = response.encode('utf-8')
+        
+        # Construct body
+        response += body
         return response
+
 
 
 def unauthorized_response():
@@ -68,15 +104,21 @@ def method_not_allowed():
 
 
 def html_response(html):
-    res = Response(body=html.encode('utf-8'))
-    res.header['Content-Type'] = 'text/html'
+    res = Response(content_type='text/html', body=html.encode('utf-8'))
     return res
 
 
-def file_download_response(file, content_type, chunked=False):
-    res = Response(body=file, chunked=chunked)
-    res.header['Content-Type'] = content_type
-    res.header['Content-Disposition'] = 'attachment'
+def range_not_satisfiable():
+    return Response(status=416, reason_phrase='Range Not Satisfiable')
+
+
+def file_download_response(file, content_type, chunked=False, range=None):
+    if range is not None:
+        res = Response(status=206, reason_phrase='Partial Content',
+                       content_type=content_type, body=file, range=range)
+    else:
+        res = Response(content_type=content_type, body=file, chunked=chunked)
+    res.headers['Content-Disposition'] = 'attachment'
     return res
 
 

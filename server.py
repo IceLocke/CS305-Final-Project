@@ -76,7 +76,22 @@ def file_view(request: req.Request):
         # print(file)
         print(content_type)
         chunked = ('chunked' in request.request_param) and (request.request_param['chunked'] == '1')
-        return resp.file_download_response(file=file, content_type=content_type, chunked=chunked)
+        if 'Range' in request.headers:
+            range_list = request.headers['Range'].split(',')
+            range = []
+            for byte_range in range_list:
+                if byte_range.startswith('-'):
+                    l, r = len(file) - int(byte_range[1:]) + 1, len(file)
+                elif byte_range.endswith('-'):
+                    l, r = int(byte_range[:-1]), len(file)
+                else:
+                    l, r = map(int, byte_range.split('-'))
+                if r < l or l > len(file) or r > len(file):
+                    return resp.range_not_satisfiable()
+                range.append((l, r))
+            return resp.file_download_response(file=file, content_type=content_type, range=range)
+        else:
+            return resp.file_download_response(file=file, content_type=content_type, chunked=chunked)
     else:  # not found
         return resp.not_find_response()
 

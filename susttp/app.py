@@ -130,7 +130,10 @@ class App:
                     response = resp.unauthorized_response()
         else:
             response = resp.Response(status=400, reason_phrase='Bad Request')
-        writer.write(response.build())
+        
+        res = response.build()
+        print(res)
+        writer.write(res)
         await writer.drain()
         writer.close()
 
