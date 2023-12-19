@@ -23,29 +23,26 @@ class Response:
         self.set_cookie[key] = value
 
     def build(self, chunked=False, chunk_size=4096):
-        response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
+        headers, body = f'{self.http_version} {self.status} {self.reason_phrase}\r\n', b''
         # Construct common headers
         for key, value in self.header.items():
-            response += f'{key}: {value}\r\n'
+            headers += f'{key}: {value}\r\n'
         # Construct cookies
         if self.set_cookie:
             set_cookie = '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
-            response += f'Set-Cookie: {set_cookie}\r\n'
+            headers += f'Set-Cookie: {set_cookie}\r\n'
 
-        response = response.encode('utf-8')
         if chunked:
-            response += b'\r\n'
             current_pos, next_pos = 0, 0
             while current_pos < len(self.body):
                 next_pos = min(current_pos + chunk_size, len(self.body))
-                response += str(next_pos - current_pos + 2).encode('utf-8') + b'\r\n'
-                response += self.body[current_pos: next_pos] + b'\r\n'
+                body += str(next_pos - current_pos + 2).encode('utf-8') + b'\r\n'
+                body += self.body[current_pos: next_pos] + b'\r\n'
                 current_pos = next_pos
         else:
-            if self.body:
-                response += f'Content-Length: {len(self.body)}\r\n\r\n'.encode('utf-8')
-                response += self.body
-        return response
+            body = self.body if self.body else b''
+        headers += f'Content-Length: {len(body)}\r\n'
+        return headers.encode('utf-8') + b'\r\n' + body
 
 
 def unauthorized_response():
