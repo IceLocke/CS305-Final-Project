@@ -32,6 +32,8 @@ class AuthManager:
     def filter(self, request: req.Request, handler):
         if handler.__name__ in self.authenticated_func:
             authorized = self.authorized(request)
+            if authorized:
+                print("authorized")
             return True if authorized else self.authenticate(request)
         else:
             return True
@@ -59,6 +61,7 @@ class AuthManager:
                     if time.time() < self.sessions[session_id]['expire_time']:
                         return True
                     else:
+                        # self.username_map.pop(self.sessions[session_id]['username'])
                         self.sessions.pop(session_id)
                         return False
         return False

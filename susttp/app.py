@@ -139,6 +139,7 @@ class App:
                     self.logger.info(f'Authenticated with session-id: {filter_result}')
                     response = resp.Response()
                     response.add_cookie('session-id', filter_result)
+                    response.add_cookie('Path', '/')
                 else:
                     self.logger.info('Cannot pass filter, route to authentication entry point')
                     response = self.auth_manager.entry_func(request)

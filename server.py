@@ -42,8 +42,7 @@ def file_system_html(path):
     root_dict, files = os.getcwd(), []
     view_path = os.path.join(root_dict, 'data', path)
     os.chdir(view_path)
-    username = path.split('\\')[0].split('/')[0]
-    files.append({'name': '/', 'path': '/' + username + '/'})
+    files.append({'name': '/', 'path': '/'})
     files.append({'name': '../', 'path': '../'})
     for file in os.listdir('.'):
         if os.path.isdir(file):
@@ -143,7 +142,7 @@ def delete(request: req.Request):
 def authenticate(request: req.Request):
     response = resp.unauthorized_response()
     response.body = login_template.render().encode('utf-8')
-    response.header['Content-Type'] = 'text/html'
+    response.headers['Content-Type'] = 'text/html'
     return response
 
 
