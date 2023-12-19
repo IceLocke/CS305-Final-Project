@@ -58,7 +58,6 @@ class Response:
                 
         # Chunk
         elif self.chunked:
-            print('haha chunked')
             self.headers['Transfer-Encoding'] = 'chunked'
             current_pos, next_pos = 0, 0
             while current_pos < len(self.body):
@@ -89,7 +88,6 @@ class Response:
         if self.body:
             response += body
 
-        print("reach final")
         return response
 
 

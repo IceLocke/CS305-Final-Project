@@ -109,7 +109,9 @@ class App:
         try:
             request = (await reader.readuntil(b'\r\n\r\n')).decode('utf-8')
         except asyncio.IncompleteReadError as e:
+            print("app.py: error!!!")
             print(e)
+        print("app.py: request=")
         print(request)
         if request:
             request = req.parse(request)
@@ -132,6 +134,7 @@ class App:
             response = resp.Response(status=400, reason_phrase='Bad Request')
         
         res = response.build()
+        print("app.py: response=")
         print(res)
         writer.write(res)
         await writer.drain()
