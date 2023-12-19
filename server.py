@@ -14,6 +14,7 @@ env = Environment(
     autoescape=select_autoescape()
 )
 file_system_template = env.get_template("file_system.html")
+login_template = env.get_template("login.html")
 error_template = env.get_template("error.html")
 
 
@@ -93,6 +94,14 @@ def delete(request: req.Request):
 @app.route("/chunk")
 def delete(request: req.Request):
     pass
+
+
+@app.auth_manager.entry_point()
+def authenticate(request: req.Request):
+    response = resp.unauthorized_response()
+    response.body = login_template.render().encode('utf-8')
+    response.header['Content-Type'] = 'text/html'
+    return response
 
 
 if __name__ == '__main__':
