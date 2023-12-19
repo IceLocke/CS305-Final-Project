@@ -9,7 +9,7 @@ class Response:
         self.status = status
         self.reason_phrase = reason_phrase
         self.set_cookie = None
-        self.chunked = False
+        self.chunked = chunked
         self.chunk_size = chunk_size
         self.range = range
         
@@ -44,7 +44,7 @@ class Response:
             if len(self.range) == 1:
                 l, r = self.range[0]
                 self.headers['Content-Range'] = f'bytes {l}-{r}/{len(self.body)}'
-                self.headers['Content-Length'] = str(r - l + 1)
+                # self.headers['Content-Length'] = str(r - l + 1)
                 body = self.body[l, r + 1]
             else:
                 content_type = self.headers['Content-Type']
@@ -58,23 +58,27 @@ class Response:
                 
         # Chunk
         elif self.chunked:
+            print('haha chunked')
             self.headers['Transfer-Encoding'] = 'chunked'
             current_pos, next_pos = 0, 0
             while current_pos < len(self.body):
                 next_pos = min(current_pos + self.chunk_size, len(self.body))
-                body += str(next_pos - current_pos).encode('utf-8') + b'\r\n'
+                body += str(hex(next_pos - current_pos))[2:].encode('utf-8') + b'\r\n'  # 十六进制去掉0x
                 body += self.body[current_pos: next_pos] + b'\r\n'
                 current_pos = next_pos
             body += b'0\r\n\r\n'
         
         # Plain body
         elif self.body:
-            self.headers['Content-Length'] = len(self.body)
             body = self.body
         
         # Construct status line
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
-        
+
+        # Calculate length
+        if self.body:
+            self.headers['Content-Length'] = len(self.body)
+
         # Construct headers
         for key, value in self.headers.items():
             response += f'{key}: {value}\r\n'
@@ -82,9 +86,11 @@ class Response:
         response = response.encode('utf-8')
         
         # Construct body
-        response += body
-        return response
+        if self.body:
+            response += body
 
+        print("reach final")
+        return response
 
 
 def unauthorized_response():
@@ -120,6 +126,10 @@ def file_download_response(file, content_type, chunked=False, range=None):
         res = Response(content_type=content_type, body=file, chunked=chunked)
     res.headers['Content-Disposition'] = 'attachment'
     return res
+
+
+def text_response(text):
+    return Response(body=text.encode('utf-8'))
 
 
 def upload_response():
