@@ -32,8 +32,6 @@ class Response:
 
     def build(self):
         # Process headers and body
-        body = b''
-        
         # Cookie
         if self.set_cookie is not None:
             cookie = '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
@@ -44,17 +42,20 @@ class Response:
             if len(self.range) == 1:
                 l, r = self.range[0]
                 self.headers['Content-Range'] = f'bytes {l}-{r}/{len(self.body)}'
-                # self.headers['Content-Length'] = str(r - l + 1)
-                body = self.body[l, r + 1]
+                body = self.body[l: r + 1]
             else:
                 content_type = self.headers['Content-Type']
                 self.headers['Content-Type'] = 'multipart/byteranges; boundary=3d6b6a416f9b5'
+                body = b''
                 for l, r in self.range:
+                    body += b'--3d6b6a416f9b5\r\n'
                     body += f'Content-Type: {content_type}\r\n'.encode('utf-8')
                     body += f'Content-Range: bytes {l}-{r}/{len(self.body)}\r\n'.encode('utf-8')
-                    body += self.body[l, r + 1]
-                    body += b'--3d6b6a416f9b5\r\n'
-                body = body[:-2] + b'--'
+                    body += self.body[l: r + 1]
+                    body += b'\r\n'
+                body += b'--3d6b6a416f9b5--'
+                
+            self.headers['Content-Length'] = len(body)
                 
         # Chunk
         elif self.chunked:
@@ -70,13 +71,10 @@ class Response:
         # Plain body
         elif self.body:
             body = self.body
+            self.headers['Content-Length'] = len(body)
         
         # Construct status line
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
-
-        # Calculate length
-        if self.body:
-            self.headers['Content-Length'] = len(self.body)
 
         # Construct headers
         for key, value in self.headers.items():

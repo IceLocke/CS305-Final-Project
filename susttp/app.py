@@ -134,8 +134,8 @@ class App:
             response = resp.Response(status=400, reason_phrase='Bad Request')
         
         res = response.build()
-        print("app.py: response=")
-        print(res)
+        # print("app.py: response=")
+        # print(res)
         writer.write(res)
         await writer.drain()
         writer.close()
