@@ -124,7 +124,7 @@ def error_html(status, reason):
 app = server.App()
 
 
-@app.route("/<path>")
+@app.route("/<path>", require_authentication=True)
 def file_view(request: req.Request):
     if request.method != 'GET':
         return resp.method_not_allowed()
@@ -159,14 +159,14 @@ def file_view(request: req.Request):
         return resp.not_find_response()
 
 
-@app.route("/upload")
+@app.route("/upload", require_authentication=True)
 def upload(request: req.Request):
     if request.method != 'POST':
         return resp.method_not_allowed()
     pass
 
 
-@app.route("/delete")
+@app.route("/delete", require_authentication=True)
 def delete(request: req.Request):
     if request.method != 'POST':
         return resp.method_not_allowed()
