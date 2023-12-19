@@ -1,10 +1,48 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="row">
+  <div class="col-auto">
+    <ul class="list-group">
+      {% for file in files %}
+      <a class="list-group-item list-group-item-action" href="{{ file['path'] }}">{{file['name']}}</a>
+      {% endfor %}
+    </ul>
 
-<table>
-    {% for file in files %}
-     <tr><th><a href="{{file['path']}}">{{file['name']}}</a></th></tr>
-    {% endfor %}
-</table>
+  </div>
+</div>
+<div class="row">
+  <form id="uploadForm">
+     <div class="col-auto">
+      <label for="fileupload" class="form-label">Upload a file</label>
+    </div>
+    <div class="col-auto">
+      <input class="form-control" id="fileupload" type="file">
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn-upload" id="uploadBtn">Upload</button>
+    </div>
+  </form>
+</div>
+<script>
+  $("#uploadForm").submit(function (evt) {
+      evt.preventDefault();
+      let formData = new FormData($(this)[0]);
+      $.ajax({
+          url: '/upload?path='+location.pathname,
+          type: 'POST',
+          data: formData,
+          async: false,
+          cache: false,
+          contentType: false,
+          enctype: 'multipart/form-data',
+          processData: false,
+          success: function (response) {
+             alert(response);
+          }
+       });
 
+       return false;
+
+  })
+</script>
 {% endblock %}

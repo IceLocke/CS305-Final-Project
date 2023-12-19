@@ -7,8 +7,8 @@ class MyTestCase(unittest.TestCase):
     def test_filter(self):
         manager = auth_manager.AuthManager()
         manager.accounts = {
-            "usr0": "pwd0",
-            "usr1": "pwd1"
+            "10000000": "pwd0",
+            "10000001": "pwd1"
         }
 
         @manager.require_authentication()
