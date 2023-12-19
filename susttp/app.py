@@ -104,7 +104,7 @@ class App:
             if max_match_route_item is not None else None
         return request_param, path_param, func, anchor
 
-    async def handle_client(self, reader, writer):
+    async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         request = None
         try:
             request = (await reader.readuntil(b'\r\n\r\n')).decode('utf-8')
@@ -132,7 +132,7 @@ class App:
                     response = resp.unauthorized_response()
         else:
             response = resp.Response(status=400, reason_phrase='Bad Request')
-        
+
         res = response.build()
         print("app.py: response=")
         print(res)

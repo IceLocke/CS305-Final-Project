@@ -12,7 +12,7 @@ class Response:
         self.chunked = chunked
         self.chunk_size = chunk_size
         self.range = range
-        
+
         timestamp = time.time()
         time_struct = time.gmtime(timestamp)
         self.headers = {
@@ -20,20 +20,18 @@ class Response:
                 'Date': time.strftime("%a, %d %b %H:%M:%S GMT", time_struct),
                 'Content-Type': content_type,
             } if headers is None else headers
-        
-        self.body = body
 
+        self.body = body
 
     def add_cookie(self, key, value):
         if self.set_cookie is None:
             self.set_cookie = {}
         self.set_cookie[key] = value
 
-
     def build(self):
         # Process headers and body
         body = b''
-        
+
         # Cookie
         if self.set_cookie is not None:
             cookie = '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
@@ -55,7 +53,7 @@ class Response:
                     body += self.body[l, r + 1]
                     body += b'--3d6b6a416f9b5\r\n'
                 body = body[:-2] + b'--'
-                
+
         # Chunk
         elif self.chunked:
             self.headers['Transfer-Encoding'] = 'chunked'
@@ -66,11 +64,11 @@ class Response:
                 body += self.body[current_pos: next_pos] + b'\r\n'
                 current_pos = next_pos
             body += b'0\r\n\r\n'
-        
+
         # Plain body
         elif self.body:
             body = self.body
-        
+
         # Construct status line
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
 
@@ -83,7 +81,7 @@ class Response:
             response += f'{key}: {value}\r\n'
         response += '\r\n'
         response = response.encode('utf-8')
-        
+
         # Construct body
         if self.body:
             response += body

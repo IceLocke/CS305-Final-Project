@@ -2,7 +2,6 @@ import binascii
 import time
 
 import susttp.request as req
-import threading
 import secrets
 import base64
 
@@ -39,7 +38,6 @@ class AuthManager:
         :return: True if the request is authorized, otherwise False
         """
         # 检查是否已经认证过
-        print(request.cookies)
         if request.cookies is not None:
             if "session-id" in request.cookies.keys():
                 session_id = request.cookies["session-id"]
