@@ -126,6 +126,8 @@ app = server.App()
 
 @app.route("/<path>")
 def file_view(request: req.Request):
+    if request.method != 'GET':
+        return resp.method_not_allowed()
     path = request.path_param['path']
     if is_server_file(path):  # file
         file, content_type = file_binary(path)
@@ -159,11 +161,15 @@ def file_view(request: req.Request):
 
 @app.route("/upload")
 def upload(request: req.Request):
+    if request.method != 'POST':
+        return resp.method_not_allowed()
     pass
 
 
 @app.route("/delete")
 def delete(request: req.Request):
+    if request.method != 'POST':
+        return resp.method_not_allowed()
     pass
 
 
