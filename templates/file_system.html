@@ -10,19 +10,19 @@
 
   </div>
 </div>
-<div class="row">
-  <form id="uploadForm">
+  <form id="uploadForm" style="margin-top: 2em">
+    <div class="row text-center">
      <div class="col-auto">
-      <label for="fileupload" class="form-label">Upload a file</label>
-    </div>
-    <div class="col-auto">
-      <input class="form-control" id="fileupload" type="file">
-    </div>
-    <div class="col-auto">
-      <button type="submit" class="btn-upload" id="uploadBtn">Upload</button>
+        <label for="fileupload" class="form-label"></label>
+      </div>
+      <div class="col-auto">
+        <input class="form-control" id="fileupload" type="file">
+      </div>
+      <div class="col-3">
+        <button type="submit" class="btn btn-primary mb-3">Upload</button>
+      </div>
     </div>
   </form>
-</div>
 <script>
   $("#uploadForm").submit(function (evt) {
       evt.preventDefault();
