@@ -81,10 +81,59 @@ def error_html(status, reason):
     return error_template.render(head=f'{status} {reason}')
 
 
+def resolve_form_data(data: bytes, boundary: bytes):
+    """
+    :param data: request body
+    :param boundary: in request headers
+    :return: list of (file: bytes, filename: str) pairs
+    """
+    filelist = []
+    for data_part in data.split(b'--' + boundary):
+        if data_part == b'':
+            continue
+        if b'\r\n\r\n' not in data_part:  # last part = boundary + '--\r\n'
+            break
+        data_part = data_part.split(b'\r\n\r\n')
+        header, body = data_part[0], data_part[-1]
+        lines = header.split(b'\r\n')
+        header_dict = {}  # if needed, this contains 'Content-Type'
+        disposition_dict = {}
+        for line in lines:
+            if line == b'':
+                continue
+            line = line.split(b':')
+            name, value = line[0], line[-1]
+            name = name.strip()
+            value = value.strip()
+            if name == b'Content-Disposition':
+                key_value_pairs = value.split(b';')
+                for key_value_pair in key_value_pairs:
+                    key_value_pair = key_value_pair.split(b'=')
+                    key, value = key_value_pair[0], key_value_pair[-1]
+                    key = key.strip()
+                    value = value.strip().strip(b'"')
+                    disposition_dict[key] = value
+            else:
+                header_dict[name] = value
+        filename = disposition_dict[b'filename'].decode()
+        file = body[:-2]  # remove last '\r\n'
+        filelist.append((file, filename))
+    return filelist
+
+
+def file_system_upload(path: str, file: bytes, filename: str):
+    root_dict = os.getcwd()
+    view_path = os.path.join(root_dict, 'data', path)
+    os.chdir(view_path)
+    with open(filename, 'wb') as f:
+        f.write(file)
+    os.chdir(root_dict)
+
+
 app = server.App()
 
 
-@app.route("/<path>", require_authentication=False)
+@app.route("/<path>", require_authentication=True)
 def file_view(request: req.Request):
     if request.method != 'GET':
         return resp.method_not_allowed()
@@ -116,18 +165,47 @@ def file_view(request: req.Request):
             html = file_system_html(path)
             return resp.html_response(html)
     else:  # not found
-        return resp.not_find_response()
+        return resp.not_found_response()
 
 
-@app.route("/upload", require_authentication=False)
+@app.route("/upload", require_authentication=True)
 def upload(request: req.Request):
+    # 1. wrong method
     if request.method != 'POST':
         return resp.method_not_allowed()
 
+    # 2. no path provided
+    if 'path' not in request.request_param.keys():
+        return resp.bad_request_response()
+
+    # 3. permission test
+    path = str(request.request_param['path'])
+    if path.startswith('/'):
+        path = path[1:]  # remove the first '/'
+    path_username = path.split('/')[0]
+    """
+        path = xxx or path = /xxx or path = xxx/ -> path_username = xxx
+        path = empty -> path_username = empty
+        path = //xxx -> path_username = empty  [is this correct?]
+    """
+    session_username = str(app.auth_manager.get_username(request.cookies['session-id']))
+    if path_username != session_username:
+        return resp.forbidden_response()
+
+    # 4. server not found
+    if not is_server_dir(path):
+        return resp.not_found_response()
+
+    # Upload file
+    file, filename = resolve_form_data(
+        data=request.body,
+        boundary=(request.headers['Content-Type'].split('boundary=')[1]).encode('utf-8')
+    )[0]
+    file_system_upload(path, file, filename)
     return resp.upload_response()
 
 
-@app.route("/delete", require_authentication=False)
+@app.route("/delete", require_authentication=True)
 def delete(request: req.Request):
     if request.method != 'POST':
         return resp.method_not_allowed()

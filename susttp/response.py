@@ -89,6 +89,10 @@ class Response:
         return response
 
 
+def bad_request_response():
+    return Response(status=400, reason_phrase='Bad Request')
+
+
 def unauthorized_response():
     return Response(status=401, reason_phrase='WWW-Authenticated: Basic realm=\"Authorization Required\"')
 
@@ -97,7 +101,7 @@ def forbidden_response():
     return Response(status=403, reason_phrase='Forbidden')
 
 
-def not_find_response():
+def not_found_response():
     return Response(status=404, reason_phrase='Not Found')
 
 
