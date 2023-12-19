@@ -22,47 +22,8 @@ env = Environment(
     autoescape=select_autoescape()
 )
 file_system_template = env.get_template("file_system.html")
+login_template = env.get_template("login.html")
 error_template = env.get_template("error.html")
-
-
-def check_authorization(request: req.Request):
-    """
-    Check whether a request is authorized
-    :param request: the request objet
-    :return: `session-id` if the request is authorized, otherwise `None`
-    """
-    headers = request.headers
-    # 检查是否已经认证过
-    if "Cookie" in headers.keys():
-        cookies = {}
-        for cookie in headers["Cookie"].split(";"):
-            key, value = cookie.split("=", 1)
-            cookies[key.strip()] = value
-        if "session-id" in cookies.keys():
-            if cookies["session-id"] in sessions.keys():
-                return cookies["session-id"]
-    return None
-
-
-def authenticate(request: req.Request):
-    """
-    Do authentication
-    :param request: the request object
-    :return: `session-id` if the request is authenticated, otherwise `None`
-    """
-    headers = request.headers
-    # 否则检查是否试图认证
-    if 'Authorization' in headers.keys():
-        auth_info = headers['Authorization'].split()[-1]
-        auth_info = base64.b64decode(auth_info).split(':')
-        username, password = auth_info[0], auth_info[-1]
-        if username in accounts.keys():
-            if password == accounts[username]:
-                session_id = str(secrets.token_hex(32))
-                sessions[session_id] = username
-                threading.Timer(3600, lambda _session_id: sessions.pop(_session_id), session_id)
-                return session_id
-    return None
 
 
 def is_server_file(path):
@@ -81,8 +42,7 @@ def file_system_html(path):
     root_dict, files = os.getcwd(), []
     view_path = os.path.join(root_dict, 'data', path)
     os.chdir(view_path)
-    username = path.split('\\')[0].split('/')[0]
-    files.append({'name': '/', 'path': '/' + username + '/'})
+    files.append({'name': '/', 'path': '/'})
     files.append({'name': '../', 'path': '../'})
     for file in os.listdir('.'):
         if os.path.isdir(file):
@@ -124,7 +84,7 @@ def error_html(status, reason):
 app = server.App()
 
 
-@app.route("/<path>")
+@app.route("/<path>", require_authentication=True)
 def file_view(request: req.Request):
     if request.method != 'GET':
         return resp.method_not_allowed()
@@ -159,18 +119,31 @@ def file_view(request: req.Request):
         return resp.not_find_response()
 
 
-@app.route("/upload")
+@app.route("/upload", require_authentication=True)
 def upload(request: req.Request):
     if request.method != 'POST':
         return resp.method_not_allowed()
     pass
 
 
-@app.route("/delete")
+@app.route("/delete", require_authentication=True)
 def delete(request: req.Request):
     if request.method != 'POST':
         return resp.method_not_allowed()
     pass
+
+
+@app.route("/chunk")
+def delete(request: req.Request):
+    pass
+
+
+@app.auth_manager.entry_point()
+def authenticate(request: req.Request):
+    response = resp.unauthorized_response()
+    response.body = login_template.render().encode('utf-8')
+    response.headers['Content-Type'] = 'text/html'
+    return response
 
 
 parser = argparse.ArgumentParser()

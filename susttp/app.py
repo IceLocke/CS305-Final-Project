@@ -1,7 +1,10 @@
+import logging
 import asyncio
+import sys
+import re
+
 import susttp.request as req
 import susttp.response as resp
-import re
 
 from susttp.authmanager import AuthManager
 
@@ -50,6 +53,10 @@ class App:
         self.dynamic_route_items = []  # List of DynamicRouteItem
         self.server = None
         self.auth_manager = AuthManager()
+        self.logger = logging.getLogger('SUSTTPServer')
+        while self.logger.hasHandlers():
+            self.logger.handlers.pop()
+        self.logger.addHandler(logging.StreamHandler(sys.stdout))
 
     def route(self, path, require_authentication=False):
         def warp(func):
@@ -104,15 +111,14 @@ class App:
             if max_match_route_item is not None else None
         return request_param, path_param, func, anchor
 
-    async def handle_client(self, reader, writer):
+    async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+        self.logger.info('New client connected')
         request = None
         try:
             request = (await reader.readuntil(b'\r\n\r\n')).decode('utf-8')
         except asyncio.IncompleteReadError as e:
-            print("app.py: error!!!")
             print(e)
-        print("app.py: request=")
-        print(request)
+        self.logger.info(f'Get request:\n{request}')
         if request:
             request = req.parse(request)
             path, method = request.path, request.method
@@ -120,23 +126,31 @@ class App:
             if "Content-Length" in request.headers.keys():
                 request.body = reader.read(request.headers["Content-Length"])
             if handler is None:
+                self.logger.info(f'Cannot find resource {request.path}')
                 response = resp.not_find_response()
             else:
                 # True / session-id will pass the filter
+                self.logger.info('Applying security filter')
                 filter_result = self.auth_manager.filter(request, handler)
-                if filter_result:
+                if filter_result is True:
+                    self.logger.info(f'Passed filter, route to handler {handler.__name__}')
                     response = handler(request)
-                    if filter_result.__class__ is str:
-                        response.add_cookie('session-id', filter_result)
+                elif filter_result.__class__ is str:
+                    self.logger.info(f'Authenticated with session-id: {filter_result}')
+                    response = resp.Response()
+                    response.add_cookie('session-id', filter_result)
+                    response.add_cookie('Path', '/')
                 else:
-                    response = resp.unauthorized_response()
+                    self.logger.info('Cannot pass filter, route to authentication entry point')
+                    response = self.auth_manager.entry_func(request)
         else:
             response = resp.Response(status=400, reason_phrase='Bad Request')
-        
+
         res = response.build()
         # print("app.py: response=")
         # print(res)
         writer.write(res)
+        self.logger.info(f'Response {res}')
         await writer.drain()
         writer.close()
 
@@ -145,6 +159,9 @@ class App:
         async with self.server:
             await self.server.serve_forever()
 
-    def run(self, host='localhost', port=8080):
+    def run(self, host='localhost', port=8080, debug=True):
+        if debug:
+            self.logger.setLevel(logging.INFO)
+        self.logger.info(f'SUSTech HTTP server now runs on {host}:{port}')
         asyncio.run(self.run_server(host, port))
 
