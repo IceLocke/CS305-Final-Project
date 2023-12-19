@@ -12,7 +12,6 @@ class Response:
         self.chunked = chunked
         self.chunk_size = chunk_size
         self.range = range
-
         timestamp = time.time()
         time_struct = time.gmtime(timestamp)
         self.headers = {
@@ -20,16 +19,20 @@ class Response:
                 'Date': time.strftime("%a, %d %b %H:%M:%S GMT", time_struct),
                 'Content-Type': content_type,
             } if headers is None else headers
-
         self.body = body
+        self.process()
+
 
     def add_cookie(self, key, value):
         if self.set_cookie is None:
             self.set_cookie = {}
         self.set_cookie[key] = value
 
-    def build(self):
+
+    def process(self):
         # Process headers and body
+        body = None
+        
         # Cookie
         if self.set_cookie is not None:
             cookie = '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
@@ -70,7 +73,11 @@ class Response:
         elif self.body:
             body = self.body
             self.headers['Content-Length'] = len(body)
+
+        self.body = body
         
+
+    def build(self):
         # Construct status line
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
 
@@ -82,7 +89,7 @@ class Response:
 
         # Construct body
         if self.body:
-            response += body
+            response += self.body
 
         return response
 
