@@ -42,14 +42,15 @@ def file_system_html(path):
     root_dict, files = os.getcwd(), []
     view_path = os.path.join(root_dict, 'data', path)
     os.chdir(view_path)
-    files.append({'name': '/', 'path': '/'})
-    files.append({'name': '../', 'path': '../'})
+    files.append({'name': '/', 'path': '/', 'delete': False})
+    files.append({'name': '../', 'path': '../', 'delete': False})
     for file in os.listdir('.'):
         if os.path.isdir(file):
             file = os.path.join(file, '')
         files.append({
             'name': file,
-            'path': '/' + os.path.join(path, file)
+            'path': '/' + os.path.join(path, file).replace('\\', '/'),
+            'delete': True
         })
     os.chdir(root_dict)
     return file_system_template.render(head=path, files=files)

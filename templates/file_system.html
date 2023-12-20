@@ -1,28 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="row">
-  <div class="col-auto">
-    <ul class="list-group">
-      {% for file in files %}
-      <a class="list-group-item list-group-item-action" href="{{ file['path'] }}">{{file['name']}}</a>
-      {% endfor %}
-    </ul>
-
-  </div>
+  <table class="table">
+  <thead>
+    <tr>
+      <th scope="col">Path</th>
+      <th scope="col">Operation</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for file in files %}
+      <tr>
+        <td><a href="{{ file['path'] }}">{{file['name']}}</a></td>
+        <td>
+          {% if file['delete'] %}
+          <button id="{{ file['path'] }}" type="button" class="btn btn-danger delete-btn">Delete</button>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
 </div>
-  <form id="uploadForm" style="margin-top: 2em" enctype="multipart/form-data">
-    <div class="row text-center">
-     <div class="col-auto">
-        <label for="fileupload" class="form-label"></label>
-      </div>
-      <div class="col-auto">
-        <input class="form-control" id="fileupload" type="file">
-      </div>
-      <div class="col-3">
-        <button type="submit" class="btn btn-primary mb-3">Upload</button>
-      </div>
+<form id="uploadForm" style="margin-top: 2em" enctype="multipart/form-data">
+  <div class="row text-center">
+   <div class="col-auto">
+      <label for="fileupload" class="form-label"></label>
     </div>
-  </form>
+    <div class="col-auto">
+      <input class="form-control" id="fileupload" type="file">
+    </div>
+    <div class="col-3">
+      <button type="submit" class="btn btn-primary mb-3">Upload</button>
+    </div>
+  </div>
+</form>
 <script>
   $("#uploadForm").submit(function (evt) {
       evt.preventDefault();
@@ -36,7 +48,7 @@
           cache: false,
           contentType: false,
           enctype: 'multipart/form-data',
-          processData: false,
+          processData: true,
           success: function (response) {
             let resp = 'Success!'
             if (response) {
@@ -47,7 +59,22 @@
        });
 
        return false;
-
+  })
+  $(".delete-btn").click(function (){
+      $.ajax({
+          url: "/delete?path="+this.id,
+          type: 'POST',
+          success: function (response) {
+              let resp = 'Success!'
+              if (response) {
+                resp += '\nServer response: ' + response
+              }
+              alert(resp);
+          },
+          error: function (response) {
+              alert('encountered error ')
+          }
+      })
   })
 </script>
 {% endblock %}
