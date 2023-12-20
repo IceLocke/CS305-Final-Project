@@ -94,6 +94,10 @@ class Response:
         return response
 
 
+def bad_request_response():
+    return Response(status=400, reason_phrase='Bad Request')
+
+
 def unauthorized_response():
     return Response(status=401, reason_phrase='WWW-Authenticated: Basic realm=\"Authorization Required\"')
 
@@ -102,7 +106,7 @@ def forbidden_response():
     return Response(status=403, reason_phrase='Forbidden')
 
 
-def not_find_response():
+def not_found_response():
     return Response(status=404, reason_phrase='Not Found')
 
 
@@ -120,7 +124,7 @@ def range_not_satisfiable():
 
 
 def file_download_response(file, content_type, chunked=False, ranges=None):
-    if range is not None:
+    if ranges is not None:
         res = Response(status=206, reason_phrase='Partial Content',
                        content_type=content_type, body=file, ranges=ranges)
     else:
@@ -131,7 +135,3 @@ def file_download_response(file, content_type, chunked=False, ranges=None):
 
 def text_response(text):
     return Response(body=text.encode('utf-8'))
-
-
-def upload_response():
-    return Response()
