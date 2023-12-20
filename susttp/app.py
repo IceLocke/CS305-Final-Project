@@ -120,25 +120,29 @@ class App:
             request = (await reader.readuntil(b'\r\n\r\n')).decode('utf-8')
         except asyncio.IncompleteReadError as e:
             print(e)
-        if len(request) < 1024:
+        if request and len(request) < 1024:
             self.logger.info(f'Get request:\n{request}')
         else:
             self.logger.info('Get request: [too long]')
         if request:
+            # get route
             request = req.parse(request)
             path, method = request.path, request.method
             request.request_param, request.path_param, handler, request.anchor = self.route_handler(path)
+
+            # read body
             if "Content-Length" in request.headers.keys():
                 total_length = int(request.headers["Content-Length"])
-                buffer_length = STREAM_READER_BUFFER_LENGTH
-                if total_length <= buffer_length:
-                    request.body = await reader.read()
-                else:
-                    request.body = b''
-                    while len(request.body) < total_length:
-                        request.body = request.body + await reader.read(
-                            max(buffer_length, total_length - len(request.body))
-                        )
+                if total_length:
+                    buffer_length = STREAM_READER_BUFFER_LENGTH
+                    if total_length <= buffer_length:
+                        request.body = await reader.read()
+                    else:
+                        request.body = b''
+                        while len(request.body) < total_length:
+                            request.body = request.body + await reader.read(
+                                max(buffer_length, total_length - len(request.body))
+                            )
             if handler is None:
                 self.logger.info(f'Cannot find resource {request.path}')
                 response = resp.not_found_response()
@@ -148,6 +152,7 @@ class App:
                 filter_result = self.auth_manager.filter(request, handler)
                 if filter_result is True:
                     self.logger.info(f'Passed filter, route to handler {handler.__name__}')
+                    # handle
                     response = handler(request)
                 elif filter_result.__class__ is str:
                     self.logger.info(f'Authenticated with session-id: {filter_result}')
@@ -160,9 +165,10 @@ class App:
         else:
             response = resp.Response(status=400, reason_phrase='Bad Request')
 
+        # response
         res = response.build()
         writer.write(res)
-        if len(res) < 1024:
+        if res and len(res) < 1024:
             self.logger.info(f'Response: {res}')
         else:
             self.logger.info('Response: [too long]')

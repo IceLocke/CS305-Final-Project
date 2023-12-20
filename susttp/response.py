@@ -130,7 +130,3 @@ def file_download_response(file, content_type, chunked=False, ranges=None):
 
 def text_response(text):
     return Response(body=text.encode('utf-8'))
-
-
-def upload_response():
-    return Response()

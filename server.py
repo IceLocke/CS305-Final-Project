@@ -3,6 +3,7 @@ import toml
 import mimetypes
 import argparse
 
+import shutil  # delete dir
 import susttp.app as server
 import susttp.response as resp
 import susttp.request as req
@@ -36,6 +37,12 @@ def is_server_dir(path):
     root_dict = os.getcwd()
     target_path = os.path.join(root_dict, 'data', path)
     return os.path.isdir(target_path)
+
+
+def is_server_path(path):
+    root_dict = os.getcwd()
+    target_path = os.path.join(root_dict, 'data', path)
+    return os.path.exists(target_path)
 
 
 def file_system_html(path):
@@ -131,6 +138,22 @@ def file_system_upload(path: str, file: bytes, filename: str):
     os.chdir(root_dict)
 
 
+def file_system_delete(path: str):
+    root_dict = os.getcwd()
+    path = os.path.join(root_dict, 'data', path)
+    try:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        elif os.path.isfile(path):
+            os.remove(path)
+        else:
+            return True
+    except OSError as e:
+        print(e)
+        return True
+    return False
+
+
 app = server.App()
 
 
@@ -169,8 +192,7 @@ def file_view(request: req.Request):
         return resp.not_found_response()
 
 
-@app.route("/upload", require_authentication=True)
-def upload(request: req.Request):
+def post_request_permission_test(request: req.Request):
     # 1. wrong method
     if request.method != 'POST':
         return resp.method_not_allowed()
@@ -193,6 +215,19 @@ def upload(request: req.Request):
     if path_username != session_username:
         return resp.forbidden_response()
 
+    return None  # Passed test
+
+
+@app.route("/upload", require_authentication=True)
+def upload(request: req.Request):
+    result = post_request_permission_test(request=request)
+    if result is not None:
+        return result
+
+    path = str(request.request_param['path'])
+    if path.startswith('/'):
+        path = path[1:]  # remove the first '/'
+
     # 4. server not found
     if not is_server_dir(path):
         return resp.not_found_response()
@@ -203,14 +238,28 @@ def upload(request: req.Request):
         boundary=(request.headers['Content-Type'].split('boundary=')[1]).encode('utf-8')
     )[0]
     file_system_upload(path, file, filename)
-    return resp.upload_response()
+    return resp.Response()
 
 
 @app.route("/delete", require_authentication=True)
 def delete(request: req.Request):
-    if request.method != 'POST':
-        return resp.method_not_allowed()
-    pass
+    result = post_request_permission_test(request=request)
+    if result is not None:
+        return result
+
+    path = str(request.request_param['path'])
+    if path.startswith('/'):
+        path = path[1:]  # remove the first '/'
+
+    # 4. server not found
+    if not is_server_path(path):
+        return resp.not_found_response()
+
+    # Delete file
+    if file_system_delete(path):
+        # System error. Shall we handle?
+        return resp.Response()
+    return resp.Response()
 
 
 @app.auth_manager.entry_point()
