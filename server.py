@@ -166,8 +166,8 @@ def file_view(request: req.Request):
         file, content_type = file_binary(path)
         chunked = ('chunked', '1') in request.request_param.items()
         if 'Range' in request.headers:
-            range_list = request.headers['Range'].split(',')
-            ranges = []
+            range_list = request.headers['Range'][6:].split(',') # remove starting 'bytes='
+            range = []
             for byte_range in range_list:
                 if byte_range.startswith('-'):
                     l, r = len(file) - int(byte_range[1:]) + 1, len(file)

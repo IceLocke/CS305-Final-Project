@@ -11,8 +11,7 @@ class Response:
         self.set_cookie = None
         self.chunked = chunked
         self.chunk_size = chunk_size
-        self.ranges = ranges
-
+        self.range = range
         timestamp = time.time()
         time_struct = time.gmtime(timestamp)
         self.headers = {
@@ -20,18 +19,20 @@ class Response:
                 'Date': time.strftime("%a, %d %b %H:%M:%S GMT", time_struct),
                 'Content-Type': content_type,
             } if headers is None else headers
-
         self.body = body
+        self.process()
+
 
     def add_cookie(self, key, value):
         if self.set_cookie is None:
             self.set_cookie = {}
         self.set_cookie[key] = value
 
-    def build(self):
-        # Process headers and body
-        body = b''
 
+    def process(self):
+        # Process headers and body
+        body = None
+        
         # Cookie
         if self.set_cookie is not None:
             cookie = '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
@@ -42,18 +43,21 @@ class Response:
             if len(self.ranges) == 1:
                 l, r = self.ranges[0]
                 self.headers['Content-Range'] = f'bytes {l}-{r}/{len(self.body)}'
-                # self.headers['Content-Length'] = str(r - l + 1)
-                body = self.body[l, r + 1]
+                body = self.body[l: r + 1]
             else:
                 content_type = self.headers['Content-Type']
                 self.headers['Content-Type'] = 'multipart/byteranges; boundary=3d6b6a416f9b5'
-                for l, r in self.ranges:
+                body = b''
+                for l, r in self.range:
+                    body += b'--3d6b6a416f9b5\r\n'
                     body += f'Content-Type: {content_type}\r\n'.encode('utf-8')
                     body += f'Content-Range: bytes {l}-{r}/{len(self.body)}\r\n'.encode('utf-8')
-                    body += self.body[l, r + 1]
-                    body += b'--3d6b6a416f9b5\r\n'
-                body = body[:-2] + b'--'
-
+                    body += self.body[l: r + 1]
+                    body += b'\r\n'
+                body += b'--3d6b6a416f9b5--'
+                
+            self.headers['Content-Length'] = len(body)
+                
         # Chunk
         elif self.chunked:
             self.headers['Transfer-Encoding'] = 'chunked'
@@ -68,13 +72,14 @@ class Response:
         # Plain body
         elif self.body:
             body = self.body
+            self.headers['Content-Length'] = len(body)
 
+        self.body = body
+        
+
+    def build(self):
         # Construct status line
         response = f'{self.http_version} {self.status} {self.reason_phrase}\r\n'
-
-        # Calculate length
-        if self.body:
-            self.headers['Content-Length'] = str(len(self.body))
 
         # Construct headers
         for key, value in self.headers.items():
@@ -84,7 +89,7 @@ class Response:
 
         # Construct body
         if self.body:
-            response += body
+            response += self.body
 
         return response
 
