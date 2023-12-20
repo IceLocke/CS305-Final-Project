@@ -119,7 +119,7 @@ def range_not_satisfiable():
 
 
 def file_download_response(file, content_type, chunked=False, ranges=None):
-    if range is not None:
+    if ranges is not None:
         res = Response(status=206, reason_phrase='Partial Content',
                        content_type=content_type, body=file, ranges=ranges)
     else:

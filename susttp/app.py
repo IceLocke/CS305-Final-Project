@@ -8,6 +8,8 @@ import susttp.response as resp
 
 from susttp.authmanager import AuthManager
 
+STREAM_READER_BUFFER_LENGTH = 4096
+
 
 class App:
 
@@ -118,13 +120,25 @@ class App:
             request = (await reader.readuntil(b'\r\n\r\n')).decode('utf-8')
         except asyncio.IncompleteReadError as e:
             print(e)
-        self.logger.info(f'Get request:\n{request}')
+        if len(request) < 1024:
+            self.logger.info(f'Get request:\n{request}')
+        else:
+            self.logger.info('Get request: [too long]')
         if request:
             request = req.parse(request)
             path, method = request.path, request.method
             request.request_param, request.path_param, handler, request.anchor = self.route_handler(path)
             if "Content-Length" in request.headers.keys():
-                request.body = await reader.read(int(request.headers["Content-Length"]))
+                total_length = int(request.headers["Content-Length"])
+                buffer_length = STREAM_READER_BUFFER_LENGTH
+                if total_length <= buffer_length:
+                    request.body = await reader.read()
+                else:
+                    request.body = b''
+                    while len(request.body) < total_length:
+                        request.body = request.body + await reader.read(
+                            max(buffer_length, total_length - len(request.body))
+                        )
             if handler is None:
                 self.logger.info(f'Cannot find resource {request.path}')
                 response = resp.not_found_response()
@@ -148,7 +162,10 @@ class App:
 
         res = response.build()
         writer.write(res)
-        self.logger.info(f'Response {res}')
+        if len(res) < 1024:
+            self.logger.info(f'Response: {res}')
+        else:
+            self.logger.info('Response: [too long]')
         await writer.drain()
         writer.close()
 
