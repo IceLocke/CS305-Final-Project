@@ -146,7 +146,8 @@ class App:
             else:
                 # get route
                 path, method = request.path, request.method
-                request.request_param, request.path_param, handler, request.anchor = self.route_handler(path)# read body
+                # read body
+                request.request_param, request.path_param, handler, request.anchor = self.route_handler(path)
                 if handler is None:
                     self.logger.info(f'Cannot find resource {request.path}')
                     response = resp.not_found_response()
@@ -168,7 +169,7 @@ class App:
                         self.logger.info('Cannot pass filter, route to authentication entry point')
                         response = self.auth_manager.entry_func(request)
                     if request.cookies is not None and 'encryption-session' in request.cookies.keys():
-                        self.encrypt_manager.encyrpt_response(request.cookies['encryption-session'], response)
+                        self.encrypt_manager.encrypt_response(request.cookies['encryption-session'], response)
         else:  # if no request
             response = resp.Response(status=400, reason_phrase='Bad Request')
 

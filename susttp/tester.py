@@ -1,6 +1,5 @@
 from susttp.app import App
 
-
 if __name__ == '__main__':
     # Test - kl
     app = App()
@@ -34,4 +33,3 @@ if __name__ == '__main__':
         print('path_param=', path_param)
         print('func=', func)
         print('anchor=', anchor)
-

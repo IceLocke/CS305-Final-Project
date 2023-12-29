@@ -15,17 +15,15 @@ class Response:
         timestamp = time.time()
         time_struct = time.gmtime(timestamp)
         self.headers = {
-                'Server': 'SUSTTP Server',
-                'Date': time.strftime("%a, %d %b %H:%M:%S GMT", time_struct),
-                'Content-Type': content_type,
-            } if headers is None else headers
+            'Server': 'SUSTTP Server',
+            'Date': time.strftime("%a, %d %b %H:%M:%S GMT", time_struct),
+            'Content-Type': content_type,
+        } if headers is None else headers
         self.body = body
         self.process()
 
-
     def add_cookie(self, key, value):
         self.set_cookie[key] = value
-
 
     def process(self):
         # Process headers and body
@@ -41,16 +39,16 @@ class Response:
                 content_type = self.headers['Content-Type']
                 self.headers['Content-Type'] = 'multipart/byteranges; boundary=3d6b6a416f9b5'
                 body = b''
-                for l, r in self.range:
+                for l, r in self.ranges:
                     body += b'--3d6b6a416f9b5\r\n'
                     body += f'Content-Type: {content_type}\r\n'.encode('utf-8')
                     body += f'Content-Range: bytes {l}-{r}/{len(self.body)}\r\n'.encode('utf-8')
                     body += self.body[l: r + 1]
                     body += b'\r\n'
                 body += b'--3d6b6a416f9b5--'
-                
-            self.headers['Content-Length'] = len(body)
-                
+
+            self.headers['Content-Length'] = str(len(body))
+
         # Chunk
         elif self.chunked:
             self.headers['Transfer-Encoding'] = 'chunked'
@@ -65,10 +63,9 @@ class Response:
         # Plain body
         elif self.body:
             body = self.body
-            self.headers['Content-Length'] = len(body)
+            self.headers['Content-Length'] = str(len(body))
 
         self.body = body
-        
 
     def build(self):
         # Construct status line
@@ -77,16 +74,16 @@ class Response:
         # Construct headers
         for key, value in self.headers.items():
             response += f'{key}: {value}\r\n'
-        
+
         # Cookie
         if self.set_cookie != {}:
             response += 'Set-Cookie: '
             response += '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
             response += '\r\n'
-        
+
         response += '\r\n'
         response = response.encode('utf-8')
-        
+
         # Construct body
         if self.body is not None:
             response += self.body
