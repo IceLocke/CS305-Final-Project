@@ -68,7 +68,7 @@ class EncryptManager:
     
     def encyrpt_response(self, session_id, response: resp.Response):
         if response.body is not None:
-            response.body = self.decrypt_AES(session_id, response.body)
+            response.body = self.encrypt_AES(session_id, response.body)
             if 'Content-Length' in response.headers:
                 response.headers['Content-Length'] = len(response.body)
 
