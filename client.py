@@ -65,7 +65,6 @@ class Client:
         for key, val in self.headers.items():
             self.sock.send(f'{key}: {val}\r\n'.encode('utf-8'))
         if self.cookies != {}:
-            print("A Cookie Here")
             self.sock.send(b'Cookie: ')
             self.sock.send('; '.join([f'{key}={value}' for (key, value) in self.cookies.items()]).encode('utf-8'))
             self.sock.send(b'\r\n')
@@ -73,7 +72,7 @@ class Client:
         self.sock.send(b'\r\n')
         
         if self.body is not None:
-            # print(self.body)
+            print(self.body)
             self.sock.send(self.body)
     
     

@@ -128,6 +128,7 @@ class App:
             self.logger.info('Get request: [too long]')
         if request:
             request = req.parse(request)
+            print(request.headers)
             # read body
             if "Content-Length" in request.headers.keys():
                 total_length = int(request.headers["Content-Length"])
@@ -140,9 +141,9 @@ class App:
                         request.body = b''
                         while len(request.body) < total_length:
                             request.body = request.body + await reader.read(
-                                max(buffer_length, total_length - len(request.body))
+                                min(buffer_length, total_length - len(request.body))
                             )
-                print(request.body)
+                print("done", request.body)
             if self.encrypt_manager.in_process(request):
                 response = self.encrypt_manager.handle_request(request)
             else:
