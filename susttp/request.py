@@ -37,6 +37,6 @@ def parse(request):
         path=request_line['path'],
         version=request_line['version'],
         headers=headers,
-        cookies=cookies
+        cookies=cookies,
     )
 
