@@ -69,6 +69,8 @@ class Client:
             self.sock.send('; '.join([f'{key}={value}' for (key, value) in self.cookies.items()]).encode('utf-8'))
             self.sock.send(b'\r\n')
         
+        self.sock.send(b'\r\n')
+        
         if self.body is not None:
             print(self.body)
             self.sock.send(self.body)
@@ -103,7 +105,7 @@ class Client:
         self.send()
         
         status, headers, body = parse_response(self.recv())
-
+        # handshake over
 
 def main():
     client = Client('localhost', 8080, 'Artanisax')

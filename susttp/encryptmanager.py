@@ -39,6 +39,7 @@ class EncryptManager:
     
     
     def in_process(self, request: Request):
+        print(request.headers)
         if ('Request-Public-Key', '1') in request.headers.items():
             return True
         elif request.cookies is not None and 'encryption-session' in request.cookies.keys():

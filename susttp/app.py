@@ -143,7 +143,7 @@ class App:
                             request.body = request.body + await reader.read(
                                 min(buffer_length, total_length - len(request.body))
                             )
-                print("done", request.body)
+                print("done:\n", request.body)
             if self.encrypt_manager.in_process(request):
                 response = self.encrypt_manager.handle_request(request)
             else:
