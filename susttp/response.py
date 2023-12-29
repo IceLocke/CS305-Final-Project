@@ -8,10 +8,10 @@ class Response:
         self.http_version = http_version
         self.status = status
         self.reason_phrase = reason_phrase
-        self.set_cookie = None
+        self.set_cookie = {}
         self.chunked = chunked
         self.chunk_size = chunk_size
-        self.range = range
+        self.ranges = ranges
         timestamp = time.time()
         time_struct = time.gmtime(timestamp)
         self.headers = {
@@ -24,19 +24,12 @@ class Response:
 
 
     def add_cookie(self, key, value):
-        if self.set_cookie is None:
-            self.set_cookie = {}
         self.set_cookie[key] = value
 
 
     def process(self):
         # Process headers and body
         body = None
-        
-        # Cookie
-        if self.set_cookie is not None:
-            cookie = '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
-            self.headers['Set-Cookie'] = cookie
 
         # Range
         if self.ranges is not None:
@@ -84,11 +77,18 @@ class Response:
         # Construct headers
         for key, value in self.headers.items():
             response += f'{key}: {value}\r\n'
+        
+        # Cookie
+        if self.set_cookie != {}:
+            response += 'Set-Cookie: '
+            response += '; '.join([f'{key}={value}' for (key, value) in self.set_cookie.items()])
+            response += '\r\n'
+        
         response += '\r\n'
         response = response.encode('utf-8')
-
+        
         # Construct body
-        if self.body:
+        if self.body is not None:
             response += self.body
 
         return response

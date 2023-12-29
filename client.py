@@ -1,7 +1,10 @@
 import socket
+
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP, AES
 from Crypto.Util.Padding import pad, unpad
+
+from secrets import token_hex
 
 
 def parse_response(response):
@@ -18,6 +21,8 @@ def parse_response(response):
     print(status)
     print(headers)
     print(body)
+    
+    return status, headers, body
 
 
 class EncryptManager:
@@ -41,21 +46,35 @@ class EncryptManager:
 
 class Client:
     def __init__(self, url, port, user):
+        self.url = url
+        self.port = port
+        self.sock = None
+        self.headers = {'User-Client': user}
+        self.cookies = {}
+        self.body = None
+
+
+    def send(self, method='HEAD', url='/', ver='HTTP/1.1'):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((url, port))
-        self.headers = {'User-Client': user}        
-
-
-    def send(self, method='HEAD', url='/', ver='HTTP/1.1', body=None):
-        print(f'{method} {url} {ver}\r\n')
+        self.sock.connect((self.url, self.port))
+        if self.body is not None:
+            self.headers['Content-Length'] = len(self.body)
+            
         self.sock.send(f'{method} {url} {ver}\r\n'.encode('utf-8'))
+        print(self.headers)
         for key, val in self.headers.items():
-            print(f'{key}: {val}\r\n')
             self.sock.send(f'{key}: {val}\r\n'.encode('utf-8'))
+        if self.cookies != {}:
+            print("A Cookie Here")
+            self.sock.send(b'Cookie: ')
+            self.sock.send('; '.join([f'{key}={value}' for (key, value) in self.cookies.items()]).encode('utf-8'))
+            self.sock.send(b'\r\n')
+            
         self.sock.send(b'\r\n')
-        if body is not None:
-            print(body)
-            self.sock.send(body)
+        
+        if self.body is not None:
+            # print(self.body)
+            self.sock.send(self.body)
     
     
     def recv(self):
@@ -64,14 +83,29 @@ class Client:
         while rec:
             response += rec
             rec = self.sock.recv(1024)
+        self.sock.close()
+        self.sock = None
         return response
 
     
     def handshake(self):
         request = 'HEAD / HTTP/1.1\r\n'
         self.headers['Request-Public-Key'] = '1'
+        
         self.send()
-        response = parse_response(self.recv())
+        status, headers, body = parse_response(self.recv())
+        
+        self.cookies['encryption-session'] = headers['Set-Cookie'].split('=')[1].strip()
+        public_key = body
+        bytes_key = token_hex(64).encode('utf-8')
+        aes_key, iv = bytes_key[:32], bytes_key[32:]
+        self.headers.pop('Request-Public-Key')
+        self.body = aes_key + b'\r\n' + iv
+        cipher = PKCS1_OAEP.new(RSA.import_key(public_key))
+        self.body = cipher.encrypt(self.body)
+        self.send()
+        
+        status, headers, body = parse_response(self.recv())
 
 
 def main():

@@ -128,34 +128,36 @@ class App:
             self.logger.info('Get request: [too long]')
         if request:
             request = req.parse(request)
+            # read body
+            if "Content-Length" in request.headers.keys():
+                total_length = int(request.headers["Content-Length"])
+                print('len =', total_length)
+                if total_length:
+                    buffer_length = STREAM_READER_BUFFER_LENGTH
+                    if total_length <= buffer_length:
+                        request.body = await reader.read()
+                    else:
+                        request.body = b''
+                        while len(request.body) < total_length:
+                            request.body = request.body + await reader.read(
+                                max(buffer_length, total_length - len(request.body))
+                            )
+                print(request.body)
             if self.encrypt_manager.in_process(request):
                 response = self.encrypt_manager.handle_request(request)
             else:
                 # get route
                 path, method = request.path, request.method
                 request.request_param, request.path_param, handler, request.anchor = self.route_handler(path)# read body
-                # read body
-                if "Content-Length" in request.headers.keys():
-                    total_length = int(request.headers["Content-Length"])
-                    if total_length:
-                        buffer_length = STREAM_READER_BUFFER_LENGTH
-                        if total_length <= buffer_length:
-                            request.body = await reader.read()
-                        else:
-                            request.body = b''
-                            while len(request.body) < total_length:
-                                request.body = request.body + await reader.read(
-                                    max(buffer_length, total_length - len(request.body))
-                                )
                 if handler is None:
                     self.logger.info(f'Cannot find resource {request.path}')
-                    response = resp.not_find_response()
+                    response = resp.not_found_response()
                 else:
                     # True / session-id will pass the filter
                     self.logger.info('Applying security filter')
                     filter_result = self.auth_manager.filter(request, handler)
-                    if 'encryption-session' in request.headers.keys():
-                        self.encrypt_manager.decrypt_request(request)
+                    if 'encryption-session' in request.cookies.keys():
+                        self.encrypt_manager.decrypt_request(request.headers['encryption-session'], request)
                     if filter_result is True:
                         self.logger.info(f'Passed filter, route to handler {handler.__name__}')
                         response = handler(request)
@@ -168,14 +170,14 @@ class App:
                         self.logger.info('Cannot pass filter, route to authentication entry point')
                         response = self.auth_manager.entry_func(request)
                     if 'encryption-session' in request.headers.keys():
-                        self.encrypt_manager.encyrpt_response(response)
+                        self.encrypt_manager.encyrpt_response(request.headers['encryption-session'], response)
         else:  # if no request
             response = resp.Response(status=400, reason_phrase='Bad Request')
 
         # response
         res = response.build()
         # print("app.py: response=")
-        print(res)
+        # print(res)
         writer.write(res)
         if res and len(res) < 1024:
             self.logger.info(f'Response: {res}')

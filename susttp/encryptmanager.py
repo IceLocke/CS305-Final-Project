@@ -14,10 +14,7 @@ class EncryptManager:
         self.private_key = self.key.export_key()
         self.public_key = self.key.publickey().export_key()
         self.ase_keys = {} # <session_id>: (<key>, <iv>)
-            
-    
-    def get_RSA_public(self):
-        return self.public_key
+
         
     
     def decrypt_RSA(self, ciphertext):
@@ -41,22 +38,8 @@ class EncryptManager:
         return cipher.decrypt(ciphertext)
     
     
-    def handle_request(self, request: Request):
-        if ('Request-Public-Key', '1') in request.headers.items():
-            session_id = str(token_hex(32))
-            self.ase_keys[session_id] = None
-            response = resp.Response(body=self.get_RSA_public())
-            response.headers['Public-Key'] = '1'
-            return response
-        else:
-            session_id = request.cookies['encryption-session']
-            key, iv = unpad(self.decrypt_RSA(request.body)).decode().split('\r\n')
-            self.ase_keys[session_id] = (key, iv)
-            return resp.Response()
-    
-    
     def in_process(self, request: Request):
-        print(request.headers)
+        # print(request.headers)
         if ('Request-Public-Key', '1') in request.headers.items():
             return True
         elif 'encryption-session' in request.cookies:
@@ -66,14 +49,29 @@ class EncryptManager:
         return False
     
     
+    def handle_request(self, request: Request):
+        if ('Request-Public-Key', '1') in request.headers.items():
+            session_id = token_hex(32)
+            self.ase_keys[session_id] = None
+            response = resp.Response(body=self.public_key)
+            response.add_cookie('encryption-session', session_id)
+            response.headers['Public-Key'] = '1'
+            return response
+        else:
+            session_id = request.cookies['encryption-session']
+            key, iv = self.decrypt_RSA(request.body).decode().split('\r\n')
+            self.ase_keys[session_id] = (unpad(key), unpad(iv))
+            return resp.Response()
+    
+    
     def decrypt_request(self, session_id, request: Request):
         if request.body:
-            request.body = self.decrypt_AES(request.body)
+            request.body = self.decrypt_AES(session_id, request.body)
     
     
-    def encyrpt_response(self, seesion_id, response: resp.Response):
+    def encyrpt_response(self, session_id, response: resp.Response):
         if response.body is not None:
-            response.body = self.decrypt_AES(response.body)
+            response.body = self.decrypt_AES(session_id, response.body)
             if 'Content-Length' in response.headers:
                 response.headers['Content-Length'] = len(response.body)
 
