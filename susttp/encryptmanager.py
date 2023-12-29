@@ -39,7 +39,6 @@ class EncryptManager:
     
     
     def in_process(self, request: Request):
-        print(request.headers)
         if ('Request-Public-Key', '1') in request.headers.items():
             return True
         elif request.cookies is not None and 'encryption-session' in request.cookies.keys():
@@ -60,7 +59,7 @@ class EncryptManager:
         else:
             session_id = request.cookies['encryption-session']
             key, iv = self.decrypt_RSA(request.body).decode().split('\r\n')
-            self.ase_keys[session_id] = (unpad(key), unpad(iv))
+            self.ase_keys[session_id] = (key, iv, 16)
             return resp.Response()
     
     

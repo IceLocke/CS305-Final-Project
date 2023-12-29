@@ -128,22 +128,19 @@ class App:
             self.logger.info('Get request: [too long]')
         if request:
             request = req.parse(request)
-            print(request.headers)
             # read body
             if "Content-Length" in request.headers.keys():
                 total_length = int(request.headers["Content-Length"])
-                print('len =', total_length)
                 if total_length:
                     buffer_length = STREAM_READER_BUFFER_LENGTH
                     if total_length <= buffer_length:
-                        request.body = await reader.read()
+                        request.body = await reader.read(total_length)
                     else:
                         request.body = b''
                         while len(request.body) < total_length:
                             request.body = request.body + await reader.read(
                                 min(buffer_length, total_length - len(request.body))
                             )
-                print("done:\n", request.body)
             if self.encrypt_manager.in_process(request):
                 response = self.encrypt_manager.handle_request(request)
             else:
@@ -177,8 +174,6 @@ class App:
 
         # response
         res = response.build()
-        # print("app.py: response=")
-        # print(res)
         writer.write(res)
         if res and len(res) < 1024:
             self.logger.info(f'Response: {res}')

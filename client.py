@@ -59,6 +59,8 @@ class Client:
         self.sock.connect((self.url, self.port))
         if self.body is not None:
             self.headers['Content-Length'] = len(self.body)
+        elif 'Content-Length' in self.headers:
+            self.headers.pop('Content-Length')
             
         self.sock.send(f'{method} {url} {ver}\r\n'.encode('utf-8'))
         print(self.headers)
