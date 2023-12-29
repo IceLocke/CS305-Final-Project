@@ -1,5 +1,5 @@
 class Request:
-    def __init__(self, method, path, version, headers, cookies={}):
+    def __init__(self, method, path, version, headers, cookies=None):
         self.method = method
         self.path = path
         self.version = version

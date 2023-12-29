@@ -157,7 +157,7 @@ class App:
                     # True / session-id will pass the filter
                     self.logger.info('Applying security filter')
                     filter_result = self.auth_manager.filter(request, handler)
-                    if 'encryption-session' in request.cookies.keys():
+                    if request.cookies is not None and 'encryption-session' in request.cookies.keys():
                         self.encrypt_manager.decrypt_request(request.headers['encryption-session'], request)
                     if filter_result is True:
                         self.logger.info(f'Passed filter, route to handler {handler.__name__}')
