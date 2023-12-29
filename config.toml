@@ -3,14 +3,13 @@ title = "SUSTTP Server"
 [accounts]
 
 [accounts.0]
-username = "10000000"
-password = "pwd0"
+username = "client1"
+password = "123"
 
 [accounts.1]
-username = "10000001"
-password = "pwd1"
-
+username = "client2"
+password = "123"
 
 [accounts.2]
-username = "10000002"
-password = "pwd2"
+username = "client3"
+password = "123"

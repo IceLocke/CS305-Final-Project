@@ -57,9 +57,16 @@
           success: function (response) {
             let resp = 'Success!'
             if (response) {
-              resp += '\nServer response: ' + response
+              resp += '\nServer response: ' + response.status + ' ' + response.statusText;
             }
             alert(resp);
+          },
+          error: function (response) {
+              let resp = 'Error occurred.'
+              if (response) {
+                resp += '\nServer response: ' + response.status + ' ' + response.statusText;
+              }
+              alert(resp)
           }
        });
 
@@ -70,14 +77,18 @@
           url: "/delete?path="+this.id,
           type: 'POST',
           success: function (response) {
-              let resp = 'Success!'
-              if (response) {
-                resp += '\nServer response: ' + response
-              }
-              alert(resp);
+            let resp = 'Success!'
+            if (response) {
+              resp += '\nServer response: ' + response.status + ' ' + response.statusText;
+            }
+            alert(resp);
           },
           error: function (response) {
-              alert('encountered error ')
+              let resp = 'Error occurred.'
+              if (response) {
+                resp += '\nServer response: ' + response.status + ' ' + response.statusText;
+              }
+              alert(resp)
           }
       })
   })

@@ -90,6 +90,16 @@ class Response:
 
         return response
 
+    def set_to_head(self, method_is_head: bool):
+        """
+        If method is HEAD, set body to None
+        :param method_is_head: if method is HEAD
+        :return: self
+        """
+        if method_is_head:
+            self.body = None
+        return self
+
 
 def bad_request_response():
     return Response(status=400, reason_phrase='Bad Request')

@@ -159,8 +159,9 @@ app = server.App()
 
 @app.route("/<path>", require_authentication=True)
 def file_view(request: req.Request):
-    if request.method != 'GET':
+    if request.method != 'GET' and request.method != 'HEAD':
         return resp.method_not_allowed()
+    method_is_head = request.method == 'HEAD'
     path = request.path_param['path']
     if is_server_file(path):  # file
         file, content_type = file_binary(path)
@@ -176,20 +177,20 @@ def file_view(request: req.Request):
                 else:
                     l, r = map(int, byte_range.split('-'))
                 if r < l or l > len(file) or r > len(file):
-                    return resp.range_not_satisfiable()
+                    return resp.range_not_satisfiable().set_to_head(method_is_head)
                 ranges.append((l, r))
-            return resp.file_download_response(file=file, content_type=content_type, ranges=ranges)
+            return resp.file_download_response(file=file, content_type=content_type, ranges=ranges).set_to_head(method_is_head)
         else:
-            return resp.file_download_response(file=file, content_type=content_type, chunked=chunked)
+            return resp.file_download_response(file=file, content_type=content_type, chunked=chunked).set_to_head(method_is_head)
     elif is_server_dir(path):  # folder
         if ('SUSTech-HTTP', '1') in request.request_param.items():
             file_list = file_system_list(path)  # return value is str
-            return resp.text_response(file_list)
+            return resp.text_response(file_list).set_to_head(method_is_head)
         else:
             html = file_system_html(path)
-            return resp.html_response(html)
+            return resp.html_response(html).set_to_head(method_is_head)
     else:  # not found
-        return resp.not_found_response()
+        return resp.not_found_response().set_to_head(method_is_head)
 
 
 def post_request_permission_test(request: req.Request):

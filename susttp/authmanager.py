@@ -10,8 +10,9 @@ import base64
 class AuthManager:
     def __init__(self, expire_time=3600):
         self.accounts = {
-            '10000000': 'pwd0',
-            '10000001': 'pwd1'
+            'client1': '123',
+            'client2': '123',
+            'client3': '123',
         }
         self.sessions = {}
         self.username_map = {}
