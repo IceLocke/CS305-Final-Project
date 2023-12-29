@@ -13,7 +13,7 @@ class EncryptManager:
         self.key = RSA.generate(magic)
         self.private_key = self.key.export_key()
         self.public_key = self.key.publickey().export_key()
-        self.ase_keys = {} # <session_id>: (<key>, <iv>)
+        self.aes_keys = {} # <session_id>: (<key>, <iv>)
 
         
     
@@ -22,20 +22,16 @@ class EncryptManager:
         return cipher.decrypt(ciphertext)
     
     
-    def add_aes_key(self, session_id, aes_key, iv):
-        self.aes_key[session_id] = (aes_key, iv)
-    
-    
     def encrypt_AES(self, session_id, plaintext):
-        aes_key, iv = self.aes_key[session_id]
+        aes_key, iv = self.aes_keys[session_id]
         cipher = AES.new(aes_key, AES.MODE_CBC, iv)
-        return cipher.encrypt(plaintext)
+        return cipher.encrypt(pad(plaintext, 16))
     
     
     def decrypt_AES(self, session_id, ciphertext):
-        aes_key, iv = self.aes_key[session_id]
+        aes_key, iv = self.aes_keys[session_id]
         cipher = AES.new(aes_key, AES.MODE_CBC, iv)
-        return cipher.decrypt(ciphertext)
+        return unpad(cipher.decrypt(ciphertext), 16)
     
     
     def in_process(self, request: Request):
@@ -43,7 +39,7 @@ class EncryptManager:
             return True
         elif request.cookies is not None and 'encryption-session' in request.cookies.keys():
             session_id = request.cookies['encryption-session']
-            if self.ase_keys[session_id] is None:
+            if self.aes_keys[session_id] is None:
                 return True
         return False
     
@@ -51,16 +47,17 @@ class EncryptManager:
     def handle_request(self, request: Request):
         if ('Request-Public-Key', '1') in request.headers.items():
             session_id = token_hex(32)
-            self.ase_keys[session_id] = None
+            self.aes_keys[session_id] = None
             response = resp.Response(body=self.public_key)
             response.add_cookie('encryption-session', session_id)
             response.headers['Public-Key'] = '1'
             return response
         else:
             session_id = request.cookies['encryption-session']
-            key, iv = self.decrypt_RSA(request.body).decode().split('\r\n')
-            self.ase_keys[session_id] = (key, iv, 16)
-            return resp.Response()
+            key, iv = self.decrypt_RSA(request.body).split(b'\r\n')
+            self.aes_keys[session_id] = (key, iv)
+            msg = self.encrypt_AES(session_id, b'Encryption handshake completed.')
+            return resp.Response(body=msg)
     
     
     def decrypt_request(self, session_id, request: Request):

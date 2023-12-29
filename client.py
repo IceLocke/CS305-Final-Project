@@ -10,42 +10,40 @@ from secrets import token_hex
 def parse_response(response):
     parts = response.split(b'\r\n\r\n')
     lines = parts[0].split(b'\r\n')
+    
     status = lines[0].decode()
+    
     headers = {}
     for line in lines[1:]:
         line = line.decode()
         key, val = line.split(':', 1)
         headers[key.strip()] = val.strip()
+        
     body = parts[1] if parts[1] != b'' else None
-    
-    print(status)
-    print(headers)
-    print(body)
     
     return status, headers, body
 
 
 class EncryptManager:
     def __init__(self):
-        self.key, self.iv = self.generate_key()
-        
-    
-    def generate_key(self, magic=b'magic'):
-        return pad(magic, 16), pad(magic + magic, 16)
+        bytes_key = token_hex(32).encode('utf-8')
+        self.key = bytes_key[:16]
+        self.iv = bytes_key[-16:]
     
     
     def encrypt(self, plaintext):
         cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        return cipher.encrypt(plaintext)
+        return cipher.encrypt(pad(plaintext, 16))
     
     
-    def decrypt(self, session_id, ciphertext):
+    def decrypt(self, ciphertext):
         cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
-        return cipher.decrypt(ciphertext)
+        return unpad(cipher.decrypt(ciphertext), 16)
 
 
 class Client:
     def __init__(self, url, port, user):
+        self.manager = EncryptManager()
         self.url = url
         self.port = port
         self.sock = None
@@ -63,7 +61,6 @@ class Client:
             self.headers.pop('Content-Length')
             
         self.sock.send(f'{method} {url} {ver}\r\n'.encode('utf-8'))
-        print(self.headers)
         for key, val in self.headers.items():
             self.sock.send(f'{key}: {val}\r\n'.encode('utf-8'))
         if self.cookies != {}:
@@ -74,7 +71,6 @@ class Client:
         self.sock.send(b'\r\n')
         
         if self.body is not None:
-            print(self.body)
             self.sock.send(self.body)
     
     
@@ -99,15 +95,14 @@ class Client:
         self.cookies['encryption-session'] = headers['Set-Cookie'].split('=')[1].strip()
         public_key = body
         bytes_key = token_hex(64).encode('utf-8')
-        aes_key, iv = bytes_key[:32], bytes_key[32:]
         self.headers.pop('Request-Public-Key')
-        self.body = aes_key + b'\r\n' + iv
+        self.body = self.manager.key + b'\r\n' + self.manager.iv
         cipher = PKCS1_OAEP.new(RSA.import_key(public_key))
         self.body = cipher.encrypt(self.body)
         self.send()
         
         status, headers, body = parse_response(self.recv())
-        # handshake over
+        print(self.manager.decrypt(body).decode())
 
 def main():
     client = Client('localhost', 8080, 'Artanisax')
