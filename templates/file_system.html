@@ -39,7 +39,12 @@
   $("#uploadForm").submit(function (evt) {
       evt.preventDefault();
       let formData = new FormData();
-      formData.append("file", $('#fileupload')[0].files[0])
+      const file = $('#fileupload')[0].files[0];
+      if (file == null) {
+          alert('Did not choose file!')
+          return
+      }
+      formData.append("file", file);
       $.ajax({
           url: '/upload?path='+location.pathname,
           type: 'POST',

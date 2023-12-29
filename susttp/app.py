@@ -134,7 +134,7 @@ class App:
                 if total_length:
                     buffer_length = STREAM_READER_BUFFER_LENGTH
                     if total_length <= buffer_length:
-                        request.body = await reader.read(total_length)
+                        request.body = await reader.read(buffer_length)
                     else:
                         request.body = b''
                         while len(request.body) < total_length:
