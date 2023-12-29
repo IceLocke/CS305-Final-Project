@@ -63,6 +63,7 @@ class EncryptManager:
     def decrypt_request(self, session_id, request: Request):
         if request.body:
             request.body = self.decrypt_AES(session_id, request.body)
+            print(request.body.decode())
     
     
     def encyrpt_response(self, session_id, response: resp.Response):

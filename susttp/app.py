@@ -139,7 +139,7 @@ class App:
                         request.body = b''
                         while len(request.body) < total_length:
                             request.body = request.body + await reader.read(
-                                min(buffer_length, total_length - len(request.body))
+                                max(buffer_length, total_length - len(request.body))
                             )
             if self.encrypt_manager.in_process(request):
                 response = self.encrypt_manager.handle_request(request)
@@ -155,7 +155,7 @@ class App:
                     self.logger.info('Applying security filter')
                     filter_result = self.auth_manager.filter(request, handler)
                     if request.cookies is not None and 'encryption-session' in request.cookies.keys():
-                        self.encrypt_manager.decrypt_request(request.headers['encryption-session'], request)
+                        self.encrypt_manager.decrypt_request(request.cookies['encryption-session'], request)
                     if filter_result is True:
                         self.logger.info(f'Passed filter, route to handler {handler.__name__}')
                         response = handler(request)
@@ -167,8 +167,8 @@ class App:
                     else:
                         self.logger.info('Cannot pass filter, route to authentication entry point')
                         response = self.auth_manager.entry_func(request)
-                    if 'encryption-session' in request.headers.keys():
-                        self.encrypt_manager.encyrpt_response(request.headers['encryption-session'], response)
+                    if request.cookies is not None and 'encryption-session' in request.cookies.keys():
+                        self.encrypt_manager.encyrpt_response(request.cookies['encryption-session'], response)
         else:  # if no request
             response = resp.Response(status=400, reason_phrase='Bad Request')
 

@@ -99,10 +99,16 @@ class Client:
         self.body = self.manager.key + b'\r\n' + self.manager.iv
         cipher = PKCS1_OAEP.new(RSA.import_key(public_key))
         self.body = cipher.encrypt(self.body)
-        self.send()
         
+        self.send()
         status, headers, body = parse_response(self.recv())
         print(self.manager.decrypt(body).decode())
+        
+        self.body = self.manager.encrypt(b'AES for both side.')
+        
+        self.send()
+        status, headers, body = parse_response(self.recv())
+        
 
 def main():
     client = Client('localhost', 8080, 'Artanisax')
