@@ -7,6 +7,7 @@ import susttp.request as req
 import susttp.response as resp
 
 from susttp.authmanager import AuthManager
+from susttp.encryptmanager import EncryptManager
 
 STREAM_READER_BUFFER_LENGTH = 4096
 
@@ -55,6 +56,7 @@ class App:
         self.dynamic_route_items = []  # List of DynamicRouteItem
         self.server = None
         self.auth_manager = AuthManager()
+        self.encrypt_manager = EncryptManager()
         self.logger = logging.getLogger('SUSTTPServer')
         while self.logger.hasHandlers():
             self.logger.handlers.pop()
@@ -125,11 +127,7 @@ class App:
         else:
             self.logger.info('Get request: [too long]')
         if request:
-            # get route
             request = req.parse(request)
-            path, method = request.path, request.method
-            request.request_param, request.path_param, handler, request.anchor = self.route_handler(path)
-
             # read body
             if "Content-Length" in request.headers.keys():
                 total_length = int(request.headers["Content-Length"])
@@ -143,26 +141,35 @@ class App:
                             request.body = request.body + await reader.read(
                                 max(buffer_length, total_length - len(request.body))
                             )
-            if handler is None:
-                self.logger.info(f'Cannot find resource {request.path}')
-                response = resp.not_found_response()
+            if self.encrypt_manager.in_process(request):
+                response = self.encrypt_manager.handle_request(request)
             else:
-                # True / session-id will pass the filter
-                self.logger.info('Applying security filter')
-                filter_result = self.auth_manager.filter(request, handler)
-                if filter_result is True:
-                    self.logger.info(f'Passed filter, route to handler {handler.__name__}')
-                    # handle
-                    response = handler(request)
-                elif filter_result.__class__ is str:
-                    self.logger.info(f'Authenticated with session-id: {filter_result}')
-                    response = resp.Response()
-                    response.add_cookie('session-id', filter_result)
-                    response.add_cookie('Path', '/')
+                # get route
+                path, method = request.path, request.method
+                request.request_param, request.path_param, handler, request.anchor = self.route_handler(path)# read body
+                if handler is None:
+                    self.logger.info(f'Cannot find resource {request.path}')
+                    response = resp.not_found_response()
                 else:
-                    self.logger.info('Cannot pass filter, route to authentication entry point')
-                    response = self.auth_manager.entry_func(request)
-        else:
+                    # True / session-id will pass the filter
+                    self.logger.info('Applying security filter')
+                    filter_result = self.auth_manager.filter(request, handler)
+                    if request.cookies is not None and 'encryption-session' in request.cookies.keys():
+                        self.encrypt_manager.decrypt_request(request.cookies['encryption-session'], request)
+                    if filter_result is True:
+                        self.logger.info(f'Passed filter, route to handler {handler.__name__}')
+                        response = handler(request)
+                    elif filter_result.__class__ is str:
+                        self.logger.info(f'Authenticated with session-id: {filter_result}')
+                        response = resp.Response()
+                        response.add_cookie('session-id', filter_result)
+                        response.add_cookie('Path', '/')
+                    else:
+                        self.logger.info('Cannot pass filter, route to authentication entry point')
+                        response = self.auth_manager.entry_func(request)
+                    if request.cookies is not None and 'encryption-session' in request.cookies.keys():
+                        self.encrypt_manager.encyrpt_response(request.cookies['encryption-session'], response)
+        else:  # if no request
             response = resp.Response(status=400, reason_phrase='Bad Request')
 
         # response

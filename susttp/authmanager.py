@@ -84,7 +84,7 @@ class AuthManager:
             auth_info = auth_info.decode('ASCII').split(':')
             username, password = auth_info[0], auth_info[-1]
             if (username, password) in self.accounts.items():
-                session_id = str(secrets.token_hex(32))
+                session_id = secrets.token_hex(32)
                 self.sessions[session_id] = {'username': username, 'expire_time': time.time() + self.expire_time}
                 if username in self.username_map.keys():
                     self.sessions.pop(self.username_map[username])
