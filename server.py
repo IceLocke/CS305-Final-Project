@@ -167,16 +167,19 @@ def file_view(request: req.Request):
         file, content_type = file_binary(path)
         chunked = ('chunked', '1') in request.request_param.items()
         if 'Range' in request.headers:
-            range_list = request.headers['Range'][6:].split(',')  # remove starting 'bytes='
+            ranges_str = str(request.headers['Range'])
+            if ranges_str.startswith('bytes='):
+                ranges_str = ranges_str[6:]
+            range_list = ranges_str.split(',')  # remove starting 'bytes='
             ranges = []
             for byte_range in range_list:
                 if byte_range.startswith('-'):
-                    l, r = len(file) - int(byte_range[1:]) + 1, len(file)
+                    l, r = len(file) - int(byte_range[1:]), len(file) - 1
                 elif byte_range.endswith('-'):
-                    l, r = int(byte_range[:-1]), len(file)
+                    l, r = int(byte_range[:-1]), len(file) - 1
                 else:
                     l, r = map(int, byte_range.split('-'))
-                if r < l or l > len(file) or r > len(file):
+                if r < l or l >= len(file) or r >= len(file):
                     return resp.range_not_satisfiable().set_to_head(method_is_head)
                 ranges.append((l, r))
             return resp.file_download_response(file=file, content_type=content_type, ranges=ranges).set_to_head(method_is_head)

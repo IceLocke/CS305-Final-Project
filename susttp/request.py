@@ -10,6 +10,18 @@ class Request:
         self.anchor = None
         self.body = None
 
+    def add_cookie(self, name, value):
+        """
+        kl: 用于登录后强行插入一条session-id进入request的cookie，模拟成重新发来的指令
+        是一个介于测试脚本和我们原本设计之间的adapter
+        :param name: cookie name
+        :param value: cookie value
+        :return: nothing
+        """
+        if self.cookies is None:
+            self.cookies = {}
+        self.cookies[name] = value
+
 
 def parse(request):
     lines = request.split('\r\n')

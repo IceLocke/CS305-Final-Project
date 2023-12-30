@@ -162,7 +162,9 @@ class App:
                         response = handler(request)
                     elif filter_result.__class__ is str:
                         self.logger.info(f'Authenticated with session-id: {filter_result}')
-                        response = resp.Response()
+                        # response = resp.Response()
+                        request.add_cookie('session-id', filter_result)
+                        response = handler(request)
                         response.add_cookie('session-id', filter_result)
                         response.add_cookie('Path', '/')
                     else:

@@ -43,6 +43,7 @@ class Response:
                     body += b'--3d6b6a416f9b5\r\n'
                     body += f'Content-Type: {content_type}\r\n'.encode('utf-8')
                     body += f'Content-Range: bytes {l}-{r}/{len(self.body)}\r\n'.encode('utf-8')
+                    body += b'\r\n'
                     body += self.body[l: r + 1]
                     body += b'\r\n'
                 body += b'--3d6b6a416f9b5--'
@@ -53,6 +54,7 @@ class Response:
         elif self.chunked:
             self.headers['Transfer-Encoding'] = 'chunked'
             current_pos, next_pos = 0, 0
+            body = b''
             while current_pos < len(self.body):
                 next_pos = min(current_pos + self.chunk_size, len(self.body))
                 body += str(hex(next_pos - current_pos))[2:].encode('utf-8') + b'\r\n'  # 十六进制去掉0x
