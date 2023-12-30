@@ -55,8 +55,9 @@ class EncryptManager:
 
     def decrypt_request(self, session_id, request: Request):
         if request.body:
+            print(request.body)
             request.body = self.decrypt_aes(session_id, request.body)
-            print(request.body.decode())
+            print(request.body)
 
     def encrypt_response(self, session_id, response: resp.Response):
         if response.body is not None:

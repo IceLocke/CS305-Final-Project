@@ -103,7 +103,8 @@ class Client:
 
         self.send()
         status, headers, body = parse_response(self.recv())
-        print(self.manager.decrypt(body).decode())
+        print(body)
+        print(self.manager.decrypt(body))
 
 
 def main():
