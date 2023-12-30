@@ -48,7 +48,9 @@ class EncryptManager:
             return response
         else:
             session_id = request.cookies['encryption-session']
+            print(request.body)
             key, iv = self.decrypt_rsa(request.body).split(b'\r\n')
+            print(key+b'\r\n'+iv)
             self.aes_keys[session_id] = (key, iv)
             msg = self.encrypt_aes(session_id, b'Encryption handshake completed.')
             return resp.Response(body=msg)

@@ -92,6 +92,7 @@ class Client:
         bytes_key = token_hex(64).encode('utf-8')
         self.headers.pop('Request-Public-Key')
         self.body = self.manager.key + b'\r\n' + self.manager.iv
+        print(self.body)
         cipher = PKCS1_OAEP.new(RSA.import_key(public_key))
         self.body = cipher.encrypt(self.body)
 
