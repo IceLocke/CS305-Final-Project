@@ -67,7 +67,7 @@ def file_system_list(path):
     root_dict, files = os.getcwd(), []
     view_path = os.path.join(root_dict, 'data', path)
     os.chdir(view_path)
-    for file in os.listdir('.'):
+    for file in sorted(os.listdir('.')):
         if os.path.isdir(file):
             file = file + '/'
         files.append(str(file))
@@ -162,15 +162,15 @@ def file_view(request: req.Request):
     if request.method != 'GET' and request.method != 'HEAD':
         return resp.method_not_allowed()
     method_is_head = request.method == 'HEAD'
-    path = request.path_param['path']
+    path = request.path_param['path'].replace('%20', ' ')
     if is_server_file(path):  # file
         file, content_type = file_binary(path)
         chunked = ('chunked', '1') in request.request_param.items()
         if 'Range' in request.headers:
             ranges_str = str(request.headers['Range'])
             if ranges_str.startswith('bytes='):
-                ranges_str = ranges_str[6:]
-            range_list = ranges_str.split(',')  # remove starting 'bytes='
+                ranges_str = ranges_str[6:]  # remove starting 'bytes='
+            range_list = ranges_str.split(',')
             ranges = []
             for byte_range in range_list:
                 if byte_range.startswith('-'):
